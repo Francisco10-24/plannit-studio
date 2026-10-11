@@ -156,15 +156,20 @@ class _CotizaScreenState extends State<CotizaScreen> {
             const Text('Cuéntanos tu evento y te mostramos opciones',
                 style: TextStyle(color: kMalva)),
             const SizedBox(height: 16),
-            if (_intentado && _errores > 0) ...[
-              BannerEstado(
-                tipo: TipoBanner.error,
-                mensaje: _errores == 1
-                    ? '1 dato no coincide. Revisa el campo marcado.'
-                    : '$_errores datos no coinciden entre sí. Revisa los campos marcados.',
-              ),
-              const SizedBox(height: 16),
-            ],
+            // El espacio del banner siempre existe: si apareciera y desapareciera,
+            // los campos de abajo cambiarían de posición y sus errores se mezclarían
+            if (_intentado && _errores > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: BannerEstado(
+                  tipo: TipoBanner.error,
+                  mensaje: _errores == 1
+                      ? '1 dato no coincide. Revisa el campo marcado.'
+                      : '$_errores datos no coinciden entre sí. Revisa los campos marcados.',
+                ),
+              )
+            else
+              const SizedBox.shrink(),
             const EtiquetaSeccion('Tipo de evento'),
             _chips(_tipos, _tipo, (t) => setState(() => _tipo = t)),
             const SizedBox(height: 16),
@@ -187,7 +192,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
                   child: CampoTexto(
                     etiqueta: 'Inicio del evento',
                     controller: _inicioCtrl,
-                    hint: '4:00 PM',
+                    hint: 'Elegir hora',
                     icono: Icons.schedule,
                     soloLectura: true,
                     onTap: () => _elegirHora(esInicio: true),
@@ -199,7 +204,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
                   child: CampoTexto(
                     etiqueta: 'Fin del montaje',
                     controller: _montajeCtrl,
-                    hint: '2:00 PM',
+                    hint: 'Elegir hora',
                     icono: Icons.handyman_outlined,
                     soloLectura: true,
                     onTap: () => _elegirHora(esInicio: false),
