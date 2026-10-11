@@ -141,14 +141,17 @@ class _MiDecoScreenState extends State<MiDecoScreen> {
           const SizedBox(height: 20),
           const EtiquetaSeccion('Extras'),
           ...modelo.extras.map(
-            (extra) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
+            (extra) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              // Material propio para que el ListTile pinte su fondo y efectos
+              child: Material(
                 color: kSuperficie,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kBorde),
-              ),
-              child: SwitchListTile(
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: kBorde),
+                ),
+                child: SwitchListTile(
                 secondary: SizedBox(width: 48, height: 48, child: FotoRed(url: extra.imagen, radio: 12, alto: 48)),
                 title: Text(extra.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('${extra.detalle}\n+${formatoPrecio(extra.precio)}',
@@ -156,6 +159,7 @@ class _MiDecoScreenState extends State<MiDecoScreen> {
                 isThreeLine: true,
                 value: modelo.extraActivo(extra.id),
                 onChanged: enviada ? null : (_) => modelo.alternarExtra(extra.id),
+                ),
               ),
             ),
           ),

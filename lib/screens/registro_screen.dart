@@ -130,9 +130,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
               hint: '7845-2190',
               teclado: TextInputType.phone,
               validator: validarTelefono,
-              prefijo: const Padding(
-                padding: EdgeInsets.only(left: 14, right: 8),
-                child: Text('+503', style: TextStyle(fontWeight: FontWeight.w600)),
+              prefijo: const SizedBox(
+                width: 60,
+                child: Center(
+                  child: Text('+503', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
               ),
               sufijo: validarTelefono(_telefonoCtrl.text) == null
                   ? const Icon(Icons.check_circle, color: kExito)
