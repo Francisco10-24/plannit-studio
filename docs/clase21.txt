@@ -1,0 +1,139 @@
+
+--- p1 ---
+Clase 21: completando 
+el ciclo GET, POST, PUT
+Clase 21 · Semana 7 · Desarrollo de Aplicaciones Móviles
+Hoy agregamos POST y PUT con http, y migramos las tres operaciones 
+a Dio
+Última clase de la semana: formularios + consumo de APIs se conectan 
+al final
+
+--- p2 ---
+Dónde quedamos
+Clase 20: solicitud GET con http, jsonDecode, fromJson, FutureBuilder con 
+sus tres estados
+Tarea pendiente: TextFormField reutilizable, checklist de accesibilidad, 
+segundo endpoint sin ayuda guiada
+Hoy el GET ya construido es el punto de partida para sumar POST, PUT, y 
+luego migrar todo a Dio
+
+--- p3 ---
+Bloque 1: POST con http
+http.post(Uri.parse(url), body: jsonEncode(datos), headers: {'Content-Type': 'application/json'})
+El cuerpo se envía como texto JSON: por eso jsonEncode, 
+el inverso de jsonDecode
+Un POST exitoso contra JSONPlaceholder responde con 
+código 201 (Created), no 200
+
+--- p4 ---
+Bloque 1: PUT con http
+http.put(Uri.parse('$url/$id'), body: jsonEncode(datosActualizados), headers: {...})
+PUT reemplaza el recurso completo identificado por su 
+id en la URL
+Un PUT exitoso contra JSONPlaceholder responde con 
+código 200
+
+--- p5 ---
+Ejercicio: POST y PUT propios
+01
+Agregar una solicitud POST a 
+su proyecto de la Clase 20 (crear 
+un recurso)
+02
+Agregar una solicitud PUT 
+(actualizar ese mismo recurso)
+03
+Verificar en cada caso el código de 
+estado antes de asumir éxito (201 y 
+200, no solo "no truena")
+
+--- p6 ---
+Las grietas de http
+¿Qué pasó cuando alguna de las dos solicitudes falló? ¿Cómo lo manejaron?
+http no distingue tipos de error: todo cae en un mismo 
+catch genérico
+Sin interceptores: cada solicitud repite manualmente 
+logging, encabezados, timeouts
+
+--- p7 ---
+Dio: instalación y configuración
+01
+Se agrega como dependencia y se crea una instancia compartida (Dio())
+02
+Una sola instancia configurada centraliza baseUrl, timeouts y encabezados comunes
+03
+Reemplaza, operación por operación, las llamadas que antes hacía http
+
+--- p8 ---
+Interceptores
+Código que se ejecuta automáticamente antes o después de cada solicitud
+Casos típicos: logging de cada petición/respuesta, inyección de encabezados de autenticación
+Se registran una sola vez en la instancia de Dio y aplican a las tres operaciones por igual
+
+--- p9 ---
+Migrando GET, POST y PUT a Dio
+dio.get(url) en lugar de http.get(Uri.parse(url)) — response.data ya viene decodificado
+dio.post(url, data: datos) — data recibe un Map de Dart directamente, sin jsonEncode manual
+dio.put('$url/$id', data: datosActualizados) — mismo principio que el POST
+
+--- p10 ---
+DioException: errores con nombre y apellido
+connectionTimeout → no hubo respuesta a tiempo al 
+conectar
+receiveTimeout → conectó, pero la respuesta no llegó a 
+tiempo
+connectionError → no hay red o el servidor no es 
+alcanzable
+badResponse → el servidor respondió, pero con un 
+código de error (4xx, 5xx)
+
+--- p11 ---
+http frente a Dio: comparación crítica
+Boilerplate: http exige jsonEncode/jsonDecode manual 
+en cada POST/PUT/GET; Dio lo hace por dentro
+Manejo de errores: http devuelve un error genérico; Dio 
+distingue tipos con DioException
+Interceptores: http no los tiene de forma nativa; Dio sí, y 
+aplican a GET, POST y PUT por igual
+¿Cuándo basta http? Proyectos pequeños, pocas 
+solicitudes, sin necesidad de interceptores
+
+--- p12 ---
+Actividad: interceptor y manejo de errores
+01
+Agregar al menos un interceptor funcional (logging o encabezados) a la instancia de Dio
+02
+Manejar de forma diferenciada al menos dos tipos de DioException, con una respuesta distinta en la interfaz para 
+cada uno
+03
+Probar el manejo de errores forzando una de las tres operaciones a fallar a propósito
+
+--- p13 ---
+Apoyo de IA (sin sustituir el criterio propio)
+01
+Pedir a un asistente de IA una lista 
+de tipos de DioException no 
+cubiertos en el ejercicio
+02
+Evaluar cuáles aplican realmente al 
+endpoint usado en la actividad
+03
+Justificar por escrito cuáles se 
+incorporan y cuáles no, y por qué
+
+--- p14 ---
+Cierre de la Semana 7
+Formularios: capturan y validan datos (Clases 19-20)
+Consumo de APIs: envían y reciben esos datos con un servidor, ahora con 
+GET, POST y PUT (Clases 20-21)
+Son las dos caras de una misma 
+operación en cualquier app real
+
+--- p15 ---
+Cierre general 
+y lo que viene
+Repaso general del banco de apoyo de la semana
+Cierra la ventana del foro semanal; se aplica el quiz de la lectura 
+asignada (Capítulo 9 completo, Flutter Cookbook)
+Semana 8: persistencia local combinada con lo ya aprendido de 
+consumo de APIs

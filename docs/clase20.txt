@@ -1,0 +1,119 @@
+
+--- p1 ---
+CLASE 20 · SEMANA 7 · DESARROLLO DE APLICACIONES MÓVILES
+clase 20: cierre 
+de formularios y 
+arranque de apis
+Hoy cerramos formularios de forma condensada y abrimos 
+consumo de APIs REST
+Mañana (Clase 21): Dio y cierre de la Semana 7
+
+--- p2 ---
+dónde quedamos
+Form, GlobalKey<FormState>, TextFormField y validator (Clase 19)
+Validadores personalizados, FocusNode, TextInputAction (tarea de la Clase 19)
+Hoy agregamos validación cruzada entre campos, y damos el salto a consumo de APIs
+
+--- p3 ---
+validación cruzada: el problema
+Formulario con "contraseña" y "confirmar contraseña"
+con un validator aislado por campo, 
+¿cómo saben que ambos coinciden?
+El validator de un campo no recibe por sí solo el valor del otro campo
+
+--- p4 ---
+validación cruzada: la solución
+Leer el .text del otro 
+TextEditingController al momento de 
+validate()
+O elevar el estado a un ChangeNotifier 
+compartido entre ambos campos
+Mismo patrón aplica a coherencia entre fechas, rangos mínimo-máximo
+
+--- p5 ---
+lo que queda como tarea
+TextFormField reutilizable: un 
+StatelessWidget propio que envuelve 
+TextFormField
+Checklist de accesibilidad aplicado al 
+formulario propio
+Repetir la solicitud GET de hoy contra un 
+segundo endpoint, sin ayuda guiada
+Guía escrita entregada al cierre de esta 
+clase
+
+--- p6 ---
+el salto: de formularios a 
+apis
+Un formulario captura y valida datos... ¿y luego 
+qué?
+En una app real, esos datos casi siempre se envían 
+a un servidor
+Hoy empezamos a ver cómo consumir un servicio 
+REST desde Flutter
+
+--- p7 ---
+el paquete http
+01
+http.get(Uri.parse(url)) envía 
+una solicitud GET
+02
+La respuesta trae un código 
+de estado (200, 404, 
+500...) y un cuerpo en JSON
+03
+jsonDecode(response.body) 
+convierte el texto JSON en 
+un Map o List de Dart
+
+--- p8 ---
+de json a objeto dart
+fromJson(Map<String, dynamic> json) 
+construye un objeto Dart desde el Map 
+decodificado
+toJson() hace el camino inverso, útil para 
+enviar datos (POST/PUT)
+Separar esta lógica del widget mantiene la pantalla enfocada en la interfaz
+
+--- p9 ---
+futurebuilder: los tres estados
+ConnectionState.waiti
+ng → mientras la 
+solicitud está en curso 
+(mostrar progreso)
+snapshot.hasError → la 
+solicitud falló (mostrar 
+un mensaje claro)
+snapshot.hasData → la 
+solicitud tuvo éxito 
+(mostrar los datos)
+
+--- p10 ---
+actividad de hoy (bloque 2)
+01
+Implementar una solicitud GET 
+contra un endpoint dado, con el 
+paquete http
+02
+Deserializar la respuesta a un 
+objeto Dart propio
+03
+Mostrar los datos en una lista 
+simple usando FutureBuilder con 
+sus tres estados
+
+--- p11 ---
+apoyo de ia (sin sustituir el criterio propio)
+01 Pedir a un asistente de IA dos propuestas de manejo de error de red (p. ej. tiempo de 
+espera agotado)
+02 Contrastarlas con lo visto en clase
+03 Justificar por escrito cuál conviene al endpoint y al caso propio
+
+--- p12 ---
+cierre: lo que viene en la clase 
+21
+Las limitaciones de http que probablemente ya notaron: manejo 
+manual de errores, sin interceptores
+Dio: interceptores, manejo estructurado de errores con DioException
+Cierre general de la Semana 7: formularios + consumo de APIs como 
+las dos caras de una misma operación

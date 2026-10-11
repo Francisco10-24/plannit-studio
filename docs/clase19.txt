@@ -1,0 +1,180 @@
+
+--- p1 ---
+DESARROLLO MÓVIL
+Formularios
+en Flutter
+Capturar texto es el inicio.
+Validarlo es parte del formulario.
+Form · GlobalKey<FormState> · validator
+
+--- p2 ---
+OBJETIVO DE LA CLASE
+Hoy pasamos de capturar texto a capturar datos 
+válidos
+Capturar
+TextEditingController permite leer y modificar el 
+texto. Por sí solo no comprueba si tiene sentido.
+Partimos del enfoque manual del libro.
+Validar
+Form reúne los campos; GlobalKey<FormState> 
+permite validar y guardar el conjunto.
+Cada validator declara qué datos acepta.
+Resultado esperado: al menos tres campos que no dejan pasar datos inválidos.
+
+--- p3 ---
+PUNTO DE PARTIDA
+El libro captura tres campos, pero no valida ninguno
+El diálogo permite agregar o editar una pizza usando TextEditingController.
+Nombre
+Captura texto.
+Descripción
+Captura texto.
+Precio
+Captura texto para convertirlo.
+Sin Form, validator ni GlobalKey.
+Flutter Cookbook, Third Edition · capítulo 9, “Working with REST APIs” · pp. 325-328
+
+--- p4 ---
+PREGUNTA AL GRUPO
+El libro nunca pregunta si el texto tiene sentido
+Nombre vacío
+¿Qué pasa si “Nombre” queda vacío y se 
+presiona Save?
+Price = “abc”
+¿Qué ocurre al intentar convertirlo en un 
+número?
+double.tryParse(priceController.text) ?? 0
+¿Qué esconde ese ?? 0? Una conversión fallida termina convertida en cero, sin explicar el error al usuario.
+
+--- p5 ---
+ESTRUCTURA
+Form agrupa los campos bajo un 
+estado compartido
+Un solo FormState permite validar y guardar todo en una operación.
+Form
+Estado compartido: FormState
+TextFormField · Nombre
+TextFormField · Descripción
+TextFormField · Precio
+Complementa a TextEditingController, no lo sustituye.
+
+--- p6 ---
+IDENTIDAD DEL FORMULARIO
+La GlobalKey va en el State, nunca dentro de build()
+Conecta el widget con su estado; currentState permite acceder al FormState desde cualquier parte del árbol.
+class _PizzaPageState extends State<PizzaPage> {
+final _formKey = GlobalKey<FormState>();
+@override
+Widget build(BuildContext context) {
+return Form(
+key: _formKey,
+child: /* campos del formulario */ Column(),
+);
+}
+}
+Dentro de build() se crea una llave nueva en cada reconstrucción y se pierde la referencia al FormState real.
+
+--- p7 ---
+REGLA POR CAMPO
+validator devuelve un mensaje de error o null
+TextFormField = TextField + validación integrada. El callback recibe el texto y devuelve String?.
+TextFormField(
+validator: (value) {
+if ((value ?? '').trim().length < 3) {
+return 'Escribe al menos 3 caracteres';
+}
+return null;
+},
+)
+null
+El campo es válido.
+Un mensaje
+Hay un error y se muestra al usuario.
+
+--- p8 ---
+ANTES DE GUARDAR
+validate() decide si algo se guarda
+if (_formKey.currentState!.validate()) {
+ _formKey.currentState!.save();
+}
+01
+Recorre
+validate() visita cada TextFormField.
+02
+Comprueba
+Ejecuta el validator de cada campo.
+03
+Decide
+Devuelve un resultado para todo el 
+formulario.
+Todos null → true
+Se puede guardar.
+Al menos un mensaje → false
+No se envía nada.
+
+--- p9 ---
+EXPERIENCIA DE USUARIO
+autovalidateMode define cuándo aparece el error
+disabled
+Solo al llamar validate().
+El usuario termina y luego recibe 
+los errores.
+always
+Valida desde el inicio y con 
+cada cambio.
+Desde el primer carácter, puede 
+abrumar.
+onUserInteraction
+Valida tras interactuar con el 
+campo.
+Acompaña la corrección mientras se 
+escribe.
+La experiencia de usuario también es una decisión técnica.
+
+--- p10 ---
+ANTES Y DESPUÉS
+Misma pantalla, comportamiento 
+completamente distinto
+Libro
+TextEditingController y Save 
+directo.
+Leer → guardar
+Clase
+GlobalKey<FormState>, 
+TextFormField y validator.
+Leer → validar → guardar
+if (_formKey.currentState!.validate()) {
+guardarPizza();
+}
+La diferencia es la disciplina de validar antes de confiar en el dato.
+
+--- p11 ---
+ACTIVIDAD
+Actividad: refactoriza un formulario con Form
+1
+Elige el formulario
+Toma el diálogo del libro o un formulario de tu proyecto.
+2
+Detecta los huecos
+Identifica qué validaciones le faltan y qué entradas debería rechazar.
+3
+Refactoriza
+Usa Form, GlobalKey, TextFormField y validator.
+4
+Evalúa las alternativas
+Pide a la IA reglas alternativas y evalúa si aplican antes de usarlas.
+Comprueba que al menos tres campos rechacen datos inválidos antes de guardar.
+
+--- p12 ---
+SEMANA 7
+Foro de la Semana 7: elige una modalidad
+Tema: libro sin validar frente a Form con validación.
+Resumen breve
+Máximo 150 palabras.
+Explica qué cambia al validar antes de guardar.
+Responder una pregunta
+Elige esta modalidad.
+Argumenta tu respuesta con el contraste entre 
+ambos enfoques.
+Abre hoy y cierra antes de la Clase 21 (viernes).
+Clase 20: validadores personalizados y manejo del teclado.

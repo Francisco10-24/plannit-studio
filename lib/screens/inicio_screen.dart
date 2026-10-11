@@ -1,0 +1,317 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../data/api_client.dart';
+import '../data/paquetes_service.dart';
+import '../models/catalogo.dart';
+import '../models/paquete.dart';
+import '../shared/theme.dart';
+import '../state/evento_model.dart';
+import '../utils/formato.dart';
+import '../widgets/comunes.dart';
+import '../widgets/tarjeta_paquete.dart';
+import 'cotiza_screen.dart';
+import 'mi_deco_screen.dart';
+
+// Pantalla 0: primera pantalla al abrir, estilo Airbnb
+class InicioScreen extends StatefulWidget {
+  const InicioScreen({super.key});
+
+  @override
+  State<InicioScreen> createState() => _InicioScreenState();
+}
+
+class _InicioScreenState extends State<InicioScreen> {
+  static const _categorias = [
+    ('Cumpleaños', Icons.cake_outlined),
+    ('Bodas', Icons.favorite_border),
+    ('Quince años', Icons.auto_awesome_outlined),
+    ('Baby shower', Icons.child_friendly_outlined),
+    ('Graduación', Icons.school_outlined),
+    ('Infantil', Icons.toys_outlined),
+  ];
+
+  late Future<Catalogo> _futuro;
+  String _categoria = 'Cumpleaños';
+
+  @override
+  void initState() {
+    super.initState();
+    // El GET se crea una sola vez, no en cada build
+    _futuro = _cargar();
+  }
+
+  Future<Catalogo> _cargar() async {
+    final catalogo = await paquetesService.obtenerCatalogo();
+    if (mounted) context.read<EventoModel>().guardarCatalogo(catalogo, DateTime.now());
+    return catalogo;
+  }
+
+  void _abrirPaquete(Paquete paquete) {
+    context.read<EventoModel>().elegirPaquete(paquete);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MiDecoScreen()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: FutureBuilder<Catalogo>(
+        future: _futuro,
+        builder: (context, snapshot) {
+          final guardado = context.watch<EventoModel>().ultimoCatalogo;
+          Catalogo? catalogo;
+          Widget? aviso;
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            catalogo = null;
+          } else if (snapshot.hasError) {
+            catalogo = guardado;
+            final offline = esSinConexion(snapshot.error!) && guardado != null;
+            aviso = BannerEstado(
+              tipo: offline ? TipoBanner.aviso : TipoBanner.error,
+              mensaje: offline
+                  ? textoGuardado(context.read<EventoModel>().consultadoEn)
+                  : mensajeDeError(snapshot.error!),
+              accion: 'Reintentar',
+              onAccion: () => setState(() => _futuro = _cargar()),
+            );
+          } else {
+            catalogo = snapshot.data;
+          }
+
+          final paquetes = catalogo == null
+              ? <Paquete>[]
+              : catalogo.paquetes.where((p) => p.eventos.contains(_categoria)).toList();
+
+          final encabezado = <Widget>[
+            _Encabezado(),
+            _BarraBusqueda(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CotizaScreen()),
+              ),
+            ),
+            _Categorias(
+              categorias: _categorias,
+              seleccionada: _categoria,
+              onSeleccion: (c) => setState(() => _categoria = c),
+            ),
+            if (aviso != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: aviso),
+            if (catalogo == null && aviso == null) ...[
+              const SkeletonTarjeta(),
+              const SkeletonTarjeta(),
+            ],
+            if (catalogo != null && paquetes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Text('Aún no hay paquetes para esta categoría.',
+                    textAlign: TextAlign.center, style: TextStyle(color: kMalva)),
+              ),
+          ];
+
+          // ListView.builder: solo construye lo visible
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: encabezado.length + paquetes.length + (paquetes.isEmpty ? 0 : 1),
+            itemBuilder: (context, i) {
+              if (i < encabezado.length) return encabezado[i];
+              final posicion = i - encabezado.length;
+              // Después del primer paquete: decoradores cerca de ti
+              if (posicion == 1) return _Decoradores(decoradores: catalogo!.decoradores);
+              final paquete = paquetes[posicion == 0 ? 0 : posicion - 1];
+              return TarjetaPaquete(paquete: paquete, onTap: () => _abrirPaquete(paquete));
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Encabezado extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final usuario = context.watch<EventoModel>().usuario;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 12),
+      child: Row(
+        children: [
+          const Text('Plannit',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kVino)),
+          const SizedBox(width: 4),
+          const Text('Studio', style: TextStyle(fontSize: 14, color: kMalva)),
+          const Spacer(),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: kVino,
+            child: usuario == null
+                ? const Icon(Icons.person, size: 18, color: Colors.white)
+                : Text(usuario[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BarraBusqueda extends StatelessWidget {
+  const _BarraBusqueda({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: kSuperficie,
+        elevation: 3,
+        shadowColor: kVino.withValues(alpha: 0.25),
+        shape: const StadiumBorder(side: BorderSide(color: kBorde)),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 10, 8, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: kTinta),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('¿Qué evento vas a decorar?',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      Text('Cualquier fecha · Cualquier estilo',
+                          style: TextStyle(color: kMalva, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: kBorde),
+                  ),
+                  child: const Icon(Icons.tune, size: 18),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Categorias extends StatelessWidget {
+  const _Categorias({
+    required this.categorias,
+    required this.seleccionada,
+    required this.onSeleccion,
+  });
+
+  final List<(String, IconData)> categorias;
+  final String seleccionada;
+  final ValueChanged<String> onSeleccion;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 72,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: categorias.map((c) {
+          final activa = c.$1 == seleccionada;
+          return InkWell(
+            onTap: () => onSeleccion(c.$1),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: activa ? kVino : Colors.transparent, width: 2),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(c.$2, color: activa ? kVino : kMalva),
+                  const SizedBox(height: 4),
+                  Text(
+                    c.$1,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: activa ? FontWeight.w700 : FontWeight.w500,
+                      color: activa ? kTinta : kMalva,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _Decoradores extends StatelessWidget {
+  const _Decoradores({required this.decoradores});
+
+  final List<Decorador> decoradores;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: kRosa, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Decoradores cerca de ti',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 128,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: decoradores.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 16),
+              itemBuilder: (context, i) {
+                final d = decoradores[i];
+                return SizedBox(
+                  width: 92,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: FotoRed(url: d.imagen, radio: 36, alto: 72),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(d.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                      Text('★ ${d.rating} · ${d.zona}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: kMalva, fontSize: 11)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Texto "guardado del ..." reutilizado en pantallas con caché
+String textoGuardado(DateTime? fecha) =>
+    fecha == null ? '' : 'Sin conexión · mostrando paquetes guardados del ${formatoFechaHora(fecha)}';
