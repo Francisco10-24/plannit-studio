@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necesario para el GET de paquetes y el POST de solicitudes en el APK final -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="plannit_studio"
+        android:label="Plannit Studio"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,11 +1,11 @@
 {
-    "name": "plannit_studio",
-    "short_name": "plannit_studio",
+    "name": "Plannit Studio",
+    "short_name": "Plannit",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FBF4F1",
+    "theme_color": "#9B1B30",
+    "description": "Marketplace de decoración de eventos en San Salvador",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
