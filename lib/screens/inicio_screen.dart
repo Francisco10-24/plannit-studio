@@ -296,10 +296,18 @@ class _Decoradores extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                      Text('★ ${d.rating} · ${d.zona}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: kMalva, fontSize: 11)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.star_rounded, size: 13, color: kVino),
+                          Flexible(
+                            child: Text(' ${d.rating} · ${d.zona}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: kMalva, fontSize: 11)),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 );
