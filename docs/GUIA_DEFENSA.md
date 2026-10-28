@@ -52,7 +52,7 @@ lib/
   utils/formato.dart           precios, fechas y horas en español
   widgets/                  tarjeta de paquete, campo de texto, banner, seguimiento
   screens/                  12 pantallas + la barra inferior
-test/                       42 pruebas automáticas
+test/                       41 pruebas automáticas
 ```
 **Idea clave:** las pantallas solo dibujan. Las reglas viven en `utils/`, los datos en `models/`, la red en `data/` y lo que comparten varias pantallas en `state/`.
 
@@ -160,7 +160,7 @@ Hay una segunda validación cruzada, **entre el formulario y el carrito**: al ag
 - **Pregunta probable:** "¿Las cuentas y el carrito se guardan?"
   Viven en memoria mientras la app está abierta. Guardarlos en el teléfono es el tema de la Semana 8 (persistencia local).
 
-## 6. Pruebas automáticas (`flutter test` → 42/42)
+## 6. Pruebas automáticas (`flutter test` → 41/41)
 | Archivo | Qué prueba |
 |---|---|
 | `validadores_test.dart` | cada regla de formulario y cada regla cruzada |
@@ -192,6 +192,6 @@ Hay una segunda validación cruzada, **entre el formulario y el carrito**: al ag
 cd C:\plannit_studio
 flutter run                  # en el emulador o celular
 flutter run -d chrome        # en el navegador
-flutter test                 # 42 pruebas
+flutter test                 # 41 pruebas
 flutter build apk --release  # genera build/app/outputs/flutter-apk/app-release.apk
 ```
