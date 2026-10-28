@@ -27,6 +27,20 @@ void main() {
     expect(p.colores.length, 2);
   });
 
+  test('lee descripción y detalles, y usa valores vacíos si no vienen', () {
+    final completo = Paquete.fromJson({
+      ...json,
+      'descripcion': 'Decoración elegante',
+      'detalles': ['Arco de 3 m', 'Mesa principal'],
+    });
+    expect(completo.descripcion, 'Decoración elegante');
+    expect(completo.detalles, ['Arco de 3 m', 'Mesa principal']);
+
+    final sinDetalles = Paquete.fromJson(json);
+    expect(sinDetalles.descripcion, '');
+    expect(sinDetalles.detalles, isEmpty);
+  });
+
   test('toJson hace el camino inverso', () {
     expect(Paquete.fromJson(json).toJson()['nombre'], 'Glam Rosa y Dorado');
   });

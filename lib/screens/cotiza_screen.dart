@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../shared/theme.dart';
-import '../state/evento_model.dart';
+import '../state/cotizacion_model.dart';
 import '../utils/formato.dart';
 import '../utils/validadores.dart';
 import '../widgets/campo_texto.dart';
@@ -18,7 +18,7 @@ class CotizaScreen extends StatefulWidget {
 }
 
 class _CotizaScreenState extends State<CotizaScreen> {
-  static const _tipos = ['Cumpleaños', 'Bodas', 'Quince años', 'Baby shower', 'Graduación'];
+  static const _tipos = ['Cumpleaños', 'Bodas', 'Quince años', 'Baby shower', 'Graduación', 'Infantil'];
   static const _estilos = ['Boho', 'Glam', 'Minimal', 'Temática'];
 
   // La llave va en el State, nunca dentro de build()
@@ -110,7 +110,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
     setState(() => _intentado = true);
     if (!_contarYValidar()) return;
 
-    context.read<EventoModel>().guardarEvento(
+    context.read<CotizacionModel>().guardarEvento(
           tipo: _tipo,
           estiloElegido: _estilo,
           fechaEvento: _fecha!,
@@ -121,7 +121,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
         );
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PaquetesScreen(estiloInicial: _estilo)),
+      MaterialPageRoute(builder: (_) => const PaquetesScreen(desdeCotizacion: true)),
     );
   }
 
@@ -142,7 +142,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final recientes = context.watch<EventoModel>().recientes;
+    final recientes = context.watch<CotizacionModel>().recientes;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Cotiza tu deco')),
@@ -278,7 +278,7 @@ class _CotizaScreenState extends State<CotizaScreen> {
                   leading: const Icon(Icons.history, color: kMalva),
                   title: Text('${b.tipo} · ${b.estilo}'),
                   subtitle: Text('consultado ${formatoFechaHora(b.fecha)}',
-                      style: estiloMono(color: kMalva)),
+                      style: const TextStyle(color: kMalva, fontSize: 12)),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => PaquetesScreen(estiloInicial: b.estilo)),

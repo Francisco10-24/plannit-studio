@@ -4,13 +4,21 @@ import 'package:provider/provider.dart';
 
 import 'screens/home_shell.dart';
 import 'shared/theme.dart';
-import 'state/evento_model.dart';
+import 'state/carrito_model.dart';
+import 'state/cotizacion_model.dart';
+import 'state/navegacion_model.dart';
+import 'state/sesion_model.dart';
 
 void main() {
   runApp(
-    // Estado global compartido por todas las pantallas
-    ChangeNotifierProvider(
-      create: (_) => EventoModel(),
+    // Estados globales que comparten todas las pantallas
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CotizacionModel()),
+        ChangeNotifierProvider(create: (_) => CarritoModel()),
+        ChangeNotifierProvider(create: (_) => SesionModel()),
+        ChangeNotifierProvider(create: (_) => NavegacionModel()),
+      ],
       child: const PlannitApp(),
     ),
   );

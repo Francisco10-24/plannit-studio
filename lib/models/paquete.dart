@@ -14,6 +14,8 @@ class Paquete {
     required this.incluye,
     required this.etiqueta,
     required this.imagen,
+    this.descripcion = '',
+    this.detalles = const [],
   });
 
   final int id;
@@ -29,6 +31,10 @@ class Paquete {
   final String incluye;
   final String etiqueta;
   final String imagen;
+  final String descripcion;
+
+  // Lista de lo que incluye el paquete, para la pantalla de detalle
+  final List<String> detalles;
 
   // Construye un Paquete desde el Map que devuelve el JSON
   factory Paquete.fromJson(Map<String, dynamic> json) {
@@ -46,6 +52,9 @@ class Paquete {
       incluye: json['incluye'] as String,
       etiqueta: (json['etiqueta'] as String?) ?? '',
       imagen: json['imagen'] as String,
+      // Campos opcionales: si no vienen en el JSON quedan vacíos
+      descripcion: (json['descripcion'] as String?) ?? '',
+      detalles: List<String>.from((json['detalles'] as List?) ?? const []),
     );
   }
 
@@ -63,5 +72,7 @@ class Paquete {
         'incluye': incluye,
         'etiqueta': etiqueta,
         'imagen': imagen,
+        'descripcion': descripcion,
+        'detalles': detalles,
       };
 }

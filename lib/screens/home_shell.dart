@@ -1,45 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../shared/theme.dart';
+import '../state/carrito_model.dart';
+import '../state/navegacion_model.dart';
+import '../widgets/comunes.dart';
+import 'carrito_screen.dart';
 import 'inicio_screen.dart';
-import 'mi_deco_screen.dart';
 import 'paquetes_screen.dart';
-import 'registro_screen.dart';
+import 'perfil_screen.dart';
 
 // Contenedor con la barra de navegación inferior
-class HomeShell extends StatefulWidget {
+class HomeShell extends StatelessWidget {
   const HomeShell({super.key});
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _indice = 0;
-
-  @override
   Widget build(BuildContext context) {
-    final pantallas = [
-      const InicioScreen(),
-      const PaquetesScreen(mostrarAtras: false),
-      MiDecoScreen(onExplorar: () => setState(() => _indice = 1)),
-      const RegistroScreen(),
-    ];
+    final navegacion = context.watch<NavegacionModel>();
+    final enCarrito = context.watch<CarritoModel>().cantidad;
 
     return Scaffold(
-      body: pantallas[_indice],
+      // IndexedStack conserva cada pestaña viva: no se repite el GET al cambiar
+      body: IndexedStack(
+        index: navegacion.pestana,
+        children: const [
+          InicioScreen(),
+          PaquetesScreen(esPestana: true),
+          CarritoScreen(),
+          PerfilScreen(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indice,
-        onTap: (i) => setState(() => _indice = i),
+        currentIndex: navegacion.pestana,
+        onTap: navegacion.ir,
         type: BottomNavigationBarType.fixed,
         backgroundColor: kSuperficie,
         selectedItemColor: kVino,
         unselectedItemColor: kMalva,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Explorar'),
-          BottomNavigationBarItem(icon: Icon(Icons.celebration_outlined), activeIcon: Icon(Icons.celebration), label: 'Mi deco'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil'),
+        items: [
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Inicio'),
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Explorar'),
+          BottomNavigationBarItem(
+            icon: IconoConContador(icono: Icons.shopping_bag_outlined, cantidad: enCarrito),
+            activeIcon: IconoConContador(icono: Icons.shopping_bag, cantidad: enCarrito),
+            label: 'Carrito',
+          ),
+          const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
     );

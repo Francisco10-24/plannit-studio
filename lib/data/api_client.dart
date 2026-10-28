@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-// GET: db.json del repo público, servido por la CDN jsDelivr (HTTPS)
+// GET: db.json del repo público, servido por la CDN jsDelivr (HTTPS).
+// "@v2" apunta a la versión etiquetada del catálogo (18 paquetes).
 const String kUrlCatalogo =
-    'https://cdn.jsdelivr.net/gh/Francisco10-24/plannit-studio-api@main/db.json';
+    'https://cdn.jsdelivr.net/gh/Francisco10-24/plannit-studio-api@v2/db.json';
 
 // POST: JSONPlaceholder responde 201 Created (no guarda datos)
 const String kUrlSolicitudes = 'https://jsonplaceholder.typicode.com/posts';

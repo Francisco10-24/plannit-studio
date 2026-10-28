@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/api_client.dart';
-import '../data/paquetes_service.dart';
+import '../data/cargar_catalogo.dart';
 import '../models/catalogo.dart';
 import '../models/paquete.dart';
 import '../shared/theme.dart';
-import '../state/evento_model.dart';
+import '../state/carrito_model.dart';
+import '../state/cotizacion_model.dart';
+import '../state/navegacion_model.dart';
+import '../state/sesion_model.dart';
 import '../utils/formato.dart';
 import '../widgets/comunes.dart';
 import '../widgets/tarjeta_paquete.dart';
 import 'cotiza_screen.dart';
-import 'mi_deco_screen.dart';
+import 'decorador_screen.dart';
+import 'detalle_paquete_screen.dart';
+import 'notificaciones_screen.dart';
 
-// Pantalla 0: primera pantalla al abrir, estilo Airbnb
+// Primera pantalla al abrir la app, estilo Airbnb (no pide cuenta)
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
 
@@ -22,7 +27,7 @@ class InicioScreen extends StatefulWidget {
 }
 
 class _InicioScreenState extends State<InicioScreen> {
-  static const _categorias = [
+  static const categorias = [
     ('Cumpleaños', Icons.cake_outlined),
     ('Bodas', Icons.favorite_border),
     ('Quince años', Icons.auto_awesome_outlined),
@@ -38,18 +43,14 @@ class _InicioScreenState extends State<InicioScreen> {
   void initState() {
     super.initState();
     // El GET se crea una sola vez, no en cada build
-    _futuro = _cargar();
+    _futuro = cargarCatalogo(context);
   }
 
-  Future<Catalogo> _cargar() async {
-    final catalogo = await paquetesService.obtenerCatalogo();
-    if (mounted) context.read<EventoModel>().guardarCatalogo(catalogo, DateTime.now());
-    return catalogo;
-  }
-
-  void _abrirPaquete(Paquete paquete) {
-    context.read<EventoModel>().elegirPaquete(paquete);
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const MiDecoScreen()));
+  // Deslizar hacia abajo vuelve a pedir el catálogo
+  Future<void> _recargar() {
+    final futuro = cargarCatalogo(context);
+    setState(() => _futuro = futuro);
+    return futuro.then((_) {}, onError: (_) {});
   }
 
   @override
@@ -58,22 +59,20 @@ class _InicioScreenState extends State<InicioScreen> {
       child: FutureBuilder<Catalogo>(
         future: _futuro,
         builder: (context, snapshot) {
-          final guardado = context.watch<EventoModel>().ultimoCatalogo;
+          final cotizacion = context.watch<CotizacionModel>();
           Catalogo? catalogo;
           Widget? aviso;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            catalogo = null;
+            catalogo = null; // se muestran tarjetas grises
           } else if (snapshot.hasError) {
-            catalogo = guardado;
-            final offline = esSinConexion(snapshot.error!) && guardado != null;
+            catalogo = cotizacion.ultimoCatalogo;
+            final offline = esSinConexion(snapshot.error!) && catalogo != null;
             aviso = BannerEstado(
               tipo: offline ? TipoBanner.aviso : TipoBanner.error,
-              mensaje: offline
-                  ? textoGuardado(context.read<EventoModel>().consultadoEn)
-                  : mensajeDeError(snapshot.error!),
+              mensaje: offline ? textoSinConexion(cotizacion.consultadoEn) : mensajeDeError(snapshot.error!),
               accion: 'Reintentar',
-              onAccion: () => setState(() => _futuro = _cargar()),
+              onAccion: _recargar,
             );
           } else {
             catalogo = snapshot.data;
@@ -84,18 +83,19 @@ class _InicioScreenState extends State<InicioScreen> {
               : catalogo.paquetes.where((p) => p.eventos.contains(_categoria)).toList();
 
           final encabezado = <Widget>[
-            _Encabezado(),
+            const _Encabezado(),
             _BarraBusqueda(
-              onTap: () => Navigator.push(
+              onBuscar: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CotizaScreen()),
               ),
+              onFiltros: () => context.read<NavegacionModel>().ir(NavegacionModel.explorar),
             ),
             _Categorias(
-              categorias: _categorias,
               seleccionada: _categoria,
               onSeleccion: (c) => setState(() => _categoria = c),
             ),
+            const _AvisoCarrito(),
             if (aviso != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: aviso),
             if (catalogo == null && aviso == null) ...[
               const SkeletonTarjeta(),
@@ -109,18 +109,30 @@ class _InicioScreenState extends State<InicioScreen> {
               ),
           ];
 
-          // ListView.builder: solo construye lo visible
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: encabezado.length + paquetes.length + (paquetes.isEmpty ? 0 : 1),
-            itemBuilder: (context, i) {
-              if (i < encabezado.length) return encabezado[i];
-              final posicion = i - encabezado.length;
-              // Después del primer paquete: decoradores cerca de ti
-              if (posicion == 1) return _Decoradores(decoradores: catalogo!.decoradores);
-              final paquete = paquetes[posicion == 0 ? 0 : posicion - 1];
-              return TarjetaPaquete(paquete: paquete, onTap: () => _abrirPaquete(paquete));
-            },
+          // Después del primer paquete va la sección de decoradores
+          final conDecoradores = paquetes.isNotEmpty && catalogo!.decoradores.isNotEmpty;
+
+          return RefreshIndicator(
+            color: kVino,
+            onRefresh: _recargar,
+            // ListView.builder: solo construye lo visible
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: encabezado.length + paquetes.length + (conDecoradores ? 1 : 0),
+              itemBuilder: (context, i) {
+                if (i < encabezado.length) return encabezado[i];
+                var posicion = i - encabezado.length;
+                if (conDecoradores && posicion == 1) {
+                  return _Decoradores(decoradores: catalogo!.decoradores);
+                }
+                if (conDecoradores && posicion > 1) posicion--;
+                final paquete = paquetes[posicion];
+                return TarjetaPaquete(
+                  paquete: paquete,
+                  onTap: () => abrirDetalle(context, paquete),
+                );
+              },
+            ),
           );
         },
       ),
@@ -129,9 +141,12 @@ class _InicioScreenState extends State<InicioScreen> {
 }
 
 class _Encabezado extends StatelessWidget {
+  const _Encabezado();
+
   @override
   Widget build(BuildContext context) {
-    final usuario = context.watch<EventoModel>().usuario;
+    final usuario = context.watch<SesionModel>().usuario;
+    final noLeidas = context.watch<CarritoModel>().noLeidas;
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 12),
       child: Row(
@@ -141,13 +156,24 @@ class _Encabezado extends StatelessWidget {
           const SizedBox(width: 4),
           const Text('Studio', style: TextStyle(fontSize: 14, color: kMalva)),
           const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: kVino,
-            child: usuario == null
-                ? const Icon(Icons.person, size: 18, color: Colors.white)
-                : Text(usuario[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+          IconButton(
+            tooltip: 'Notificaciones',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificacionesScreen()),
+            ),
+            icon: IconoConContador(icono: Icons.notifications_none, cantidad: noLeidas),
+          ),
+          InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => context.read<NavegacionModel>().ir(NavegacionModel.perfil),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: kVino,
+              child: usuario == null
+                  ? const Icon(Icons.person, size: 18, color: Colors.white)
+                  : Text(usuario.nombre[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+            ),
           ),
         ],
       ),
@@ -156,9 +182,10 @@ class _Encabezado extends StatelessWidget {
 }
 
 class _BarraBusqueda extends StatelessWidget {
-  const _BarraBusqueda({required this.onTap});
+  const _BarraBusqueda({required this.onBuscar, required this.onFiltros});
 
-  final VoidCallback onTap;
+  final VoidCallback onBuscar;
+  final VoidCallback onFiltros;
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +198,7 @@ class _BarraBusqueda extends StatelessWidget {
         shape: const StadiumBorder(side: BorderSide(color: kBorde)),
         child: InkWell(
           customBorder: const StadiumBorder(),
-          onTap: onTap,
+          onTap: onBuscar,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 10, 8, 10),
             child: Row(
@@ -189,13 +216,11 @@ class _BarraBusqueda extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: kBorde),
-                  ),
-                  child: const Icon(Icons.tune, size: 18),
+                IconButton(
+                  tooltip: 'Filtros',
+                  onPressed: onFiltros,
+                  style: IconButton.styleFrom(side: const BorderSide(color: kBorde)),
+                  icon: const Icon(Icons.tune, size: 18),
                 ),
               ],
             ),
@@ -207,13 +232,8 @@ class _BarraBusqueda extends StatelessWidget {
 }
 
 class _Categorias extends StatelessWidget {
-  const _Categorias({
-    required this.categorias,
-    required this.seleccionada,
-    required this.onSeleccion,
-  });
+  const _Categorias({required this.seleccionada, required this.onSeleccion});
 
-  final List<(String, IconData)> categorias;
   final String seleccionada;
   final ValueChanged<String> onSeleccion;
 
@@ -223,7 +243,7 @@ class _Categorias extends StatelessWidget {
       height: 72,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        children: categorias.map((c) {
+        children: _InicioScreenState.categorias.map((c) {
           final activa = c.$1 == seleccionada;
           return InkWell(
             onTap: () => onSeleccion(c.$1),
@@ -257,6 +277,43 @@ class _Categorias extends StatelessWidget {
   }
 }
 
+// Recordatorio cuando hay eventos esperando en el carrito
+class _AvisoCarrito extends StatelessWidget {
+  const _AvisoCarrito();
+
+  @override
+  Widget build(BuildContext context) {
+    final carrito = context.watch<CarritoModel>();
+    if (carrito.cantidad == 0) return const SizedBox(height: 12);
+    final texto = carrito.cantidad == 1 ? '1 evento' : '${carrito.cantidad} eventos';
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      child: Material(
+        color: kTinta,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => context.read<NavegacionModel>().ir(NavegacionModel.carrito),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Tienes $texto en tu carrito · ${formatoPrecio(carrito.total)}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Decoradores extends StatelessWidget {
   const _Decoradores({required this.decoradores});
 
@@ -265,7 +322,7 @@ class _Decoradores extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: const EdgeInsets.only(bottom: 28),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: kRosa, borderRadius: BorderRadius.circular(24)),
       child: Column(
@@ -282,33 +339,40 @@ class _Decoradores extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(width: 16),
               itemBuilder: (context, i) {
                 final d = decoradores[i];
-                return SizedBox(
-                  width: 92,
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: 72,
-                        height: 72,
-                        child: FotoRed(url: d.imagen, radio: 36, alto: 72),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(d.nombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.star_rounded, size: 13, color: kVino),
-                          Flexible(
-                            child: Text(' ${d.rating} · ${d.zona}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: kMalva, fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                    ],
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => DecoradorScreen(decorador: d)),
+                  ),
+                  child: SizedBox(
+                    width: 92,
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: 72,
+                          height: 72,
+                          child: FotoRed(url: d.imagen, radio: 36, alto: 72),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(d.nombre,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.star_rounded, size: 13, color: kVino),
+                            Flexible(
+                              child: Text(' ${d.rating} · ${d.zona}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: kMalva, fontSize: 11)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -319,7 +383,3 @@ class _Decoradores extends StatelessWidget {
     );
   }
 }
-
-// Texto "guardado del ..." reutilizado en pantallas con caché
-String textoGuardado(DateTime? fecha) =>
-    fecha == null ? '' : 'Sin conexión · mostrando paquetes guardados del ${formatoFechaHora(fecha)}';

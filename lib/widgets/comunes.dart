@@ -65,35 +65,67 @@ class PuntosColor extends StatelessWidget {
   }
 }
 
-// Franja técnica: "GET ... · 200 OK · 386 ms"
-class FranjaHttp extends StatelessWidget {
-  const FranjaHttp({super.key, required this.texto, this.ok = true});
+// Pantalla vacía con ícono, explicación y una acción para salir de ahí
+class EstadoVacio extends StatelessWidget {
+  const EstadoVacio({
+    super.key,
+    required this.icono,
+    required this.titulo,
+    required this.mensaje,
+    this.accion,
+    this.onAccion,
+  });
 
-  final String texto;
-  final bool ok;
+  final IconData icono;
+  final String titulo;
+  final String mensaje;
+  final String? accion;
+  final VoidCallback? onAccion;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: kRosa,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: ok ? kExito : kError,
-              shape: BoxShape.circle,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(color: kRosa, shape: BoxShape.circle),
+              child: Icon(icono, size: 40, color: kVino),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(texto, style: estiloMono())),
-        ],
+            const SizedBox(height: 16),
+            Text(titulo,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(mensaje, textAlign: TextAlign.center, style: const TextStyle(color: kMalva)),
+            if (accion != null) ...[
+              const SizedBox(height: 20),
+              FilledButton(onPressed: onAccion, child: Text(accion!)),
+            ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+// Ícono con un circulito rojo y el número (carrito, notificaciones)
+class IconoConContador extends StatelessWidget {
+  const IconoConContador({super.key, required this.icono, required this.cantidad});
+
+  final IconData icono;
+  final int cantidad;
+
+  @override
+  Widget build(BuildContext context) {
+    return Badge(
+      isLabelVisible: cantidad > 0,
+      label: Text('$cantidad'),
+      backgroundColor: kVino,
+      child: Icon(icono),
     );
   }
 }

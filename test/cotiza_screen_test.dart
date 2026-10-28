@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plannit_studio/screens/cotiza_screen.dart';
-import 'package:plannit_studio/state/evento_model.dart';
+import 'package:plannit_studio/state/cotizacion_model.dart';
 import 'package:plannit_studio/widgets/campo_texto.dart';
 import 'package:provider/provider.dart';
 
@@ -13,7 +13,7 @@ void main() {
 
     await tester.pumpWidget(
       ChangeNotifierProvider(
-        create: (_) => EventoModel(),
+        create: (_) => CotizacionModel(),
         child: const MaterialApp(home: CotizaScreen()),
       ),
     );

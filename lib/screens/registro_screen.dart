@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../shared/theme.dart';
-import '../state/evento_model.dart';
+import '../state/sesion_model.dart';
 import '../utils/validadores.dart';
 import '../widgets/campo_texto.dart';
 import '../widgets/comunes.dart';
+import 'login_screen.dart';
 
 // Pantalla 5: registro con validación de formularios
 class RegistroScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
   bool _verPassword = false;
   bool _terminos = false;
   bool _formularioValido = false;
+  String? _errorCuenta;
 
   @override
   void dispose() {
@@ -53,7 +55,20 @@ class _RegistroScreenState extends State<RegistroScreen> {
   void _crearCuenta() {
     if (!_formKey.currentState!.validate() || !_terminos) return;
     _formKey.currentState!.save();
-    context.read<EventoModel>().registrarUsuario(_nombreCtrl.text.trim());
+    final error = context.read<SesionModel>().registrar(
+          Usuario(
+            nombre: _nombreCtrl.text.trim(),
+            correo: _correoCtrl.text.trim(),
+            telefono: _telefonoCtrl.text.trim(),
+            esDecorador: !_esCliente,
+            password: _passwordCtrl.text,
+          ),
+        );
+    // El correo ya existía: se muestra el aviso y no se crea la cuenta
+    if (error != null) {
+      setState(() => _errorCuenta = error);
+      return;
+    }
 
     if (widget.desdeSolicitud) {
       Navigator.pop(context, true);
@@ -64,11 +79,17 @@ class _RegistroScreenState extends State<RegistroScreen> {
     }
   }
 
+  Future<void> _irALogin() async {
+    final entro = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+    // Si inició sesión desde "Enviar solicitud", se regresa al carrito
+    if (entro == true && widget.desdeSolicitud && mounted) Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final usuario = context.watch<EventoModel>().usuario;
-    if (usuario != null && !widget.desdeSolicitud) return _Perfil(nombre: usuario);
-
     final reglas = reglasPassword(_passwordCtrl.text);
 
     return Scaffold(
@@ -90,6 +111,15 @@ class _RegistroScreenState extends State<RegistroScreen> {
               style: const TextStyle(color: kMalva),
             ),
             const SizedBox(height: 20),
+            if (_errorCuenta != null) ...[
+              BannerEstado(
+                tipo: TipoBanner.error,
+                mensaje: _errorCuenta!,
+                accion: 'Iniciar sesión',
+                onAccion: _irALogin,
+              ),
+              const SizedBox(height: 16),
+            ],
             SegmentedButton<bool>(
               segments: const [
                 ButtonSegment(value: true, label: Text('Cliente'), icon: Icon(Icons.person_outline)),
@@ -188,7 +218,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
             const SizedBox(height: 16),
             Center(
               child: TextButton(
-                onPressed: () {},
+                onPressed: _irALogin,
                 child: const Text('¿Ya tienes cuenta? Inicia sesión'),
               ),
             ),
@@ -215,42 +245,6 @@ class _Regla extends StatelessWidget {
               size: 18, color: cumple ? kExito : kError),
           const SizedBox(width: 8),
           Text(texto, style: TextStyle(color: cumple ? kTinta : kError)),
-        ],
-      ),
-    );
-  }
-}
-
-// Vista de perfil cuando ya hay sesión
-class _Perfil extends StatelessWidget {
-  const _Perfil({required this.nombre});
-
-  final String nombre;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: kVino,
-            child: Text(nombre[0].toUpperCase(),
-                style: const TextStyle(fontSize: 32, color: Colors.white)),
-          ),
-          const SizedBox(height: 12),
-          Text(nombre,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 24),
-          const BannerEstado(tipo: TipoBanner.exito, mensaje: 'Tu cuenta está activa.'),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: () => context.read<EventoModel>().cerrarSesion(),
-            child: const Text('Cerrar sesión'),
-          ),
         ],
       ),
     );

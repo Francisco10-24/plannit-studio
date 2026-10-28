@@ -9,6 +9,7 @@ class Decorador {
     required this.zona,
     required this.rating,
     required this.imagen,
+    this.descripcion = '',
   });
 
   final int id;
@@ -16,6 +17,7 @@ class Decorador {
   final String zona;
   final double rating;
   final String imagen;
+  final String descripcion;
 
   factory Decorador.fromJson(Map<String, dynamic> json) {
     return Decorador(
@@ -24,6 +26,7 @@ class Decorador {
       zona: json['zona'] as String,
       rating: (json['rating'] as num).toDouble(),
       imagen: json['imagen'] as String,
+      descripcion: (json['descripcion'] as String?) ?? '',
     );
   }
 }
@@ -34,17 +37,13 @@ class Catalogo {
     required this.paquetes,
     required this.extras,
     required this.decoradores,
-    this.infoHttp = '',
   });
 
   final List<Paquete> paquetes;
   final List<Extra> extras;
   final List<Decorador> decoradores;
 
-  // Texto para la franja técnica: "GET ... · 200 OK · 386 ms"
-  final String infoHttp;
-
-  factory Catalogo.fromJson(Map<String, dynamic> json, {String infoHttp = ''}) {
+  factory Catalogo.fromJson(Map<String, dynamic> json) {
     return Catalogo(
       paquetes: (json['paquetes'] as List)
           .map((p) => Paquete.fromJson(p as Map<String, dynamic>))
@@ -55,7 +54,6 @@ class Catalogo {
       decoradores: (json['decoradores'] as List)
           .map((d) => Decorador.fromJson(d as Map<String, dynamic>))
           .toList(),
-      infoHttp: infoHttp,
     );
   }
 }

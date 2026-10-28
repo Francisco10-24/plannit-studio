@@ -38,3 +38,17 @@ String formatoHora(int minutos) {
 String formatoFechaHora(DateTime fecha) =>
     '${fecha.day.toString().padLeft(2, '0')} ${_meses[fecha.month - 1]} ${fecha.year}, '
     '${formatoHora(fecha.hour * 60 + fecha.minute)}';
+
+// Mensaje del modo sin conexión (requisito 5 de la ficha)
+String textoSinConexion(DateTime? fecha) => fecha == null
+    ? 'Sin conexión a internet.'
+    : 'Sin conexión · mostrando paquetes guardados del ${formatoFechaHora(fecha)}';
+
+// "Hace 5 min", "Hace 2 h" para las notificaciones
+String haceCuanto(DateTime fecha, DateTime ahora) {
+  final diferencia = ahora.difference(fecha);
+  if (diferencia.inMinutes < 1) return 'Ahora';
+  if (diferencia.inHours < 1) return 'Hace ${diferencia.inMinutes} min';
+  if (diferencia.inDays < 1) return 'Hace ${diferencia.inHours} h';
+  return formatoFechaHora(fecha);
+}
