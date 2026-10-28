@@ -177,12 +177,15 @@ class _TarjetaEvento extends StatelessWidget {
     final carrito = context.watch<CarritoModel>();
     final activos = evento.extras.length;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: kSuperficie,
+    // Material propio: los ListTile de extras pintan su fondo y efectos sobre él
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Material(
+      color: kSuperficie,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: kBorde),
+        side: const BorderSide(color: kBorde),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,6 +271,7 @@ class _TarjetaEvento extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

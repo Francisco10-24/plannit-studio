@@ -317,7 +317,7 @@ class _HojaEventoState extends State<_HojaEvento> {
       if (widget.paquete.eventos.contains(cotizacion.tipoEvento)) _tipo = cotizacion.tipoEvento;
       _fecha = cotizacion.fecha;
       _hora = cotizacion.horaInicio;
-      if (_fecha != null) _fechaCtrl.text = formatoFecha(_fecha!);
+      if (_fecha != null) _fechaCtrl.text = formatoFechaCorta(_fecha!);
       if (_hora != null) _horaCtrl.text = formatoHora(_hora!);
     }
   }
@@ -341,7 +341,7 @@ class _HojaEventoState extends State<_HojaEvento> {
     if (elegida == null) return;
     setState(() {
       _fecha = elegida;
-      _fechaCtrl.text = formatoFecha(elegida);
+      _fechaCtrl.text = formatoFechaCorta(elegida);
     });
   }
 

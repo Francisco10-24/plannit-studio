@@ -38,6 +38,12 @@ void main() {
     expect(ids(filtrarPaquetes(todos, texto: 'PAMPA deco')), [2]);
   });
 
+  test('la búsqueda también encuentra por tipo de evento', () {
+    // "Glam Rosa y Dorado" no dice "quince" en el nombre, pero sirve para Quince años
+    expect(ids(filtrarPaquetes(todos, texto: 'quince')), [1]);
+    expect(ids(filtrarPaquetes(todos, texto: 'boda')), [2]);
+  });
+
   test('filtra por estilo, tipo de evento y rango de precio', () {
     expect(ids(filtrarPaquetes(todos, estilo: 'Glam')), [1]);
     expect(ids(filtrarPaquetes(todos, tipo: 'Bodas')), [2]);

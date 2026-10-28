@@ -26,6 +26,9 @@ const _meses = [
 String formatoFecha(DateTime fecha) =>
     '${_dias[fecha.weekday - 1]} ${fecha.day} ${_meses[fecha.month - 1]} ${fecha.year}';
 
+// "26 nov 2026" (para campos angostos)
+String formatoFechaCorta(DateTime fecha) => '${fecha.day} ${_meses[fecha.month - 1]} ${fecha.year}';
+
 // Minutos desde medianoche -> "4:00 PM"
 String formatoHora(int minutos) {
   final h = minutos ~/ 60;

@@ -33,7 +33,9 @@ List<Paquete> filtrarPaquetes(
 }) {
   final buscado = normalizar(texto);
   final resultado = todos.where((p) {
-    final contenido = normalizar('${p.nombre} ${p.decorador} ${p.zona} ${p.estilo}');
+    // Se busca en nombre, decorador, zona, estilo y tipos de evento
+    final contenido =
+        normalizar('${p.nombre} ${p.decorador} ${p.zona} ${p.estilo} ${p.eventos.join(' ')}');
     return (buscado.isEmpty || contenido.contains(buscado)) &&
         (estilo == null || p.estilo == estilo) &&
         (tipo == null || p.eventos.contains(tipo)) &&

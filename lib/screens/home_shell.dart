@@ -23,11 +23,15 @@ class HomeShell extends StatelessWidget {
       // IndexedStack conserva cada pestaña viva: no se repite el GET al cambiar
       body: IndexedStack(
         index: navegacion.pestana,
-        children: const [
-          InicioScreen(),
-          PaquetesScreen(esPestana: true),
-          CarritoScreen(),
-          PerfilScreen(),
+        children: [
+          for (final (i, pantalla) in const [
+            InicioScreen(),
+            PaquetesScreen(esPestana: true),
+            CarritoScreen(),
+            PerfilScreen(),
+          ].indexed)
+            // Solo la pestaña visible anima la foto (Hero): evita tags repetidos
+            HeroMode(enabled: i == navegacion.pestana, child: pantalla),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
