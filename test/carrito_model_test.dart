@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plannit_studio/models/extra.dart';
 import 'package:plannit_studio/models/paquete.dart';
-import 'package:plannit_studio/models/solicitud.dart';
 import 'package:plannit_studio/state/carrito_model.dart';
 
 Paquete paquete(int id, double precio) => Paquete(
@@ -88,30 +87,27 @@ void main() {
     expect(carrito.cantidad, 0);
   });
 
-  test('al enviar, el evento pasa a Mis solicitudes y llega una notificación', () {
+  test('assert: un paquete con precio negativo es un estado imposible', () {
     final carrito = carritoConExtras();
-    final a = carrito.agregar(nombre: 'A', tipo: 'Cumpleaños', fecha: sabado, hora: 960, paquete: paquete(1, 285));
-    carrito.registrarEnviado(a, 20481);
-
-    expect(carrito.cantidad, 0);
-    expect(carrito.solicitudes.single.numero, 20481);
-    expect(carrito.solicitudes.single.estado, EstadoSolicitud.enviada);
-    expect(carrito.solicitudes.single.total, 285 + 25);
-    expect(carrito.noLeidas, 1);
+    expect(
+      () => carrito.agregar(nombre: 'A', tipo: 'Cumpleaños', fecha: sabado, hora: 960, paquete: paquete(9, -10)),
+      throwsA(isA<AssertionError>()),
+    );
   });
 
-  test('la solicitud avanza: enviada, en revisión, aprobada', () {
+  test('restaurar devuelve un evento quitado (Deshacer)', () {
     final carrito = carritoConExtras();
     final a = carrito.agregar(nombre: 'A', tipo: 'Cumpleaños', fecha: sabado, hora: 960, paquete: paquete(1, 285));
-    carrito.registrarEnviado(a, 1);
-    carrito.avanzarSolicitud(1);
-    expect(carrito.solicitudes.single.estado, EstadoSolicitud.enRevision);
-    carrito.avanzarSolicitud(1);
-    expect(carrito.solicitudes.single.estado, EstadoSolicitud.aprobada);
-    carrito.avanzarSolicitud(1); // ya no avanza más
-    expect(carrito.solicitudes.single.estado, EstadoSolicitud.aprobada);
-    expect(carrito.notificaciones.length, 3);
-    carrito.marcarLeidas();
-    expect(carrito.noLeidas, 0);
+    carrito.quitar(a.id);
+    carrito.restaurar(a);
+    expect(carrito.cantidad, 1);
+    expect(carrito.total, closeTo(310, 0.001));
+  });
+
+  test('nombres de extras encendidos para la solicitud', () {
+    final carrito = carritoConExtras();
+    final a = carrito.agregar(nombre: 'A', tipo: 'Cumpleaños', fecha: sabado, hora: 960, paquete: paquete(1, 285));
+    carrito.alternarExtra(a.id, 2);
+    expect(carrito.nombresExtras(a), ['Letras LED']);
   });
 }

@@ -31,8 +31,10 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Reglas propias (clase 28)
+    avoid_print: true               # usar debugPrint: print puede truncar o perder mensajes
+    prefer_const_constructors: true # widgets const no se reconstruyen sin necesidad
+    unawaited_futures: true         # un Future sin await debe marcarse a propósito con unawaited()
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

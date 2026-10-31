@@ -7,7 +7,7 @@ import '../utils/validadores.dart';
 import '../widgets/campo_texto.dart';
 import '../widgets/comunes.dart';
 
-// Iniciar sesión con una cuenta creada antes (o la cuenta de prueba)
+// Iniciar sesión con Firebase Authentication
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,7 +20,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _correoCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _verPassword = false;
+  bool _entrando = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _rellenarCorreo();
+  }
+
+  // El último correo usado se guardó cifrado (flutter_secure_storage)
+  Future<void> _rellenarCorreo() async {
+    final correo = await context.read<SesionModel>().ultimoCorreo();
+    if (correo != null && mounted && _correoCtrl.text.isEmpty) {
+      setState(() => _correoCtrl.text = correo);
+    }
+  }
 
   @override
   void dispose() {
@@ -29,22 +44,19 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _entrar() {
+  Future<void> _entrar() async {
     if (!_formKey.currentState!.validate()) return;
-    final error = context.read<SesionModel>().iniciarSesion(_correoCtrl.text, _passwordCtrl.text);
-    if (error != null) {
-      setState(() => _error = error);
-      return;
-    }
-    Navigator.pop(context, true);
-  }
-
-  void _usarCuentaDemo() {
     setState(() {
-      _correoCtrl.text = SesionModel.correoDemo;
-      _passwordCtrl.text = SesionModel.passwordDemo;
+      _entrando = true;
       _error = null;
     });
+    final error = await context.read<SesionModel>().iniciarSesion(_correoCtrl.text, _passwordCtrl.text);
+    if (!mounted) return;
+    setState(() {
+      _entrando = false;
+      _error = error;
+    });
+    if (error == null) Navigator.pop(context, true);
   }
 
   @override
@@ -61,10 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 4),
             const Text('Qué bueno verte de nuevo', style: TextStyle(color: kMalva)),
             const SizedBox(height: 24),
-            if (_error != null) ...[
-              BannerEstado(tipo: TipoBanner.error, mensaje: _error!),
-              const SizedBox(height: 16),
-            ],
+            // Espacio fijo para el aviso (no mueve los campos de abajo)
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: BannerEstado(tipo: TipoBanner.error, mensaje: _error!),
+              )
+            else
+              const SizedBox.shrink(),
             CampoTexto(
               etiqueta: 'Correo electrónico',
               controller: _correoCtrl,
@@ -86,15 +102,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            FilledButton(onPressed: _entrar, child: const Text('Entrar')),
-            const SizedBox(height: 16),
-            // Atajo para la presentación
-            Center(
-              child: TextButton.icon(
-                onPressed: _usarCuentaDemo,
-                icon: const Icon(Icons.bolt_outlined),
-                label: const Text('Usar cuenta de prueba'),
-              ),
+            FilledButton(
+              onPressed: _entrando ? null : _entrar,
+              child: _entrando
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Entrar'),
             ),
           ],
         ),

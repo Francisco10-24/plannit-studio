@@ -3,13 +3,15 @@ import 'package:provider/provider.dart';
 
 import '../data/api_client.dart';
 import '../data/cargar_catalogo.dart';
+import '../data/repositorios/catalogo_repository.dart';
+import '../data/servicios/almacenamiento.dart';
 import '../models/catalogo.dart';
 import '../models/paquete.dart';
 import '../shared/theme.dart';
 import '../state/carrito_model.dart';
-import '../state/cotizacion_model.dart';
 import '../state/navegacion_model.dart';
 import '../state/sesion_model.dart';
+import '../state/solicitudes_model.dart';
 import '../utils/formato.dart';
 import '../widgets/comunes.dart';
 import '../widgets/tarjeta_paquete.dart';
@@ -36,14 +38,45 @@ class _InicioScreenState extends State<InicioScreen> {
     ('Infantil', Icons.toys_outlined),
   ];
 
-  late Future<Catalogo> _futuro;
-  String _categoria = 'Cumpleaños';
+  late Future<ResultadoCatalogo> _futuro;
+  late String _categoria;
 
   @override
   void initState() {
     super.initState();
     // El GET se crea una sola vez, no en cada build
     _futuro = cargarCatalogo(context);
+
+    // SharedPreferences: se recuerda la última categoría elegida
+    final preferencias = context.read<Preferencias>();
+    _categoria = preferencias.ultimaCategoria ?? 'Cumpleaños';
+
+    // La bienvenida se muestra una sola vez en la vida de la app
+    if (!preferencias.bienvenidaVista) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarBienvenida(preferencias));
+    }
+  }
+
+  Future<void> _mostrarBienvenida(Preferencias preferencias) async {
+    await showDialog<void>(
+      context: context,
+      builder: (contexto) => AlertDialog(
+        title: const Text('Bienvenida/o a Plannit Studio'),
+        content: const Text(
+          'Explora decoraciones para tu evento, agrega una o varias al carrito '
+          'y envía la solicitud al decorador desde aquí mismo.',
+        ),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(contexto), child: const Text('Empezar')),
+        ],
+      ),
+    );
+    await preferencias.marcarBienvenidaVista();
+  }
+
+  void _elegirCategoria(String categoria) {
+    setState(() => _categoria = categoria);
+    context.read<Preferencias>().guardarCategoria(categoria);
   }
 
   // Deslizar hacia abajo vuelve a pedir el catálogo
@@ -56,26 +89,34 @@ class _InicioScreenState extends State<InicioScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: FutureBuilder<Catalogo>(
+      child: FutureBuilder<ResultadoCatalogo>(
         future: _futuro,
         builder: (context, snapshot) {
-          final cotizacion = context.watch<CotizacionModel>();
           Catalogo? catalogo;
           Widget? aviso;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             catalogo = null; // se muestran tarjetas grises
           } else if (snapshot.hasError) {
-            catalogo = cotizacion.ultimoCatalogo;
-            final offline = esSinConexion(snapshot.error!) && catalogo != null;
+            // Sin internet y sin nada guardado todavía, o error del servidor
             aviso = BannerEstado(
-              tipo: offline ? TipoBanner.aviso : TipoBanner.error,
-              mensaje: offline ? textoSinConexion(cotizacion.consultadoEn) : mensajeDeError(snapshot.error!),
+              tipo: esSinConexion(snapshot.error!) ? TipoBanner.aviso : TipoBanner.error,
+              mensaje: mensajeDeError(snapshot.error!),
               accion: 'Reintentar',
               onAccion: _recargar,
             );
           } else {
-            catalogo = snapshot.data;
+            final resultado = snapshot.data!;
+            catalogo = resultado.catalogo;
+            // Sin internet: se muestra lo guardado en el teléfono con su fecha
+            if (resultado.desdeCache) {
+              aviso = BannerEstado(
+                tipo: TipoBanner.aviso,
+                mensaje: textoSinConexion(resultado.actualizadoEn),
+                accion: 'Reintentar',
+                onAccion: _recargar,
+              );
+            }
           }
 
           final paquetes = catalogo == null
@@ -93,7 +134,7 @@ class _InicioScreenState extends State<InicioScreen> {
             ),
             _Categorias(
               seleccionada: _categoria,
-              onSeleccion: (c) => setState(() => _categoria = c),
+              onSeleccion: _elegirCategoria,
             ),
             const _AvisoCarrito(),
             if (aviso != null) Padding(padding: const EdgeInsets.only(bottom: 16), child: aviso),
@@ -146,7 +187,7 @@ class _Encabezado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final usuario = context.watch<SesionModel>().usuario;
-    final noLeidas = context.watch<CarritoModel>().noLeidas;
+    final noLeidas = context.watch<SolicitudesModel>().noLeidas;
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 12),
       child: Row(

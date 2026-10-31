@@ -1,11 +1,14 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../shared/theme.dart';
-import '../state/carrito_model.dart';
 import '../state/sesion_model.dart';
+import '../state/solicitudes_model.dart';
 import 'favoritos_screen.dart';
 import 'notificaciones_screen.dart';
+import 'panel_decorador_screen.dart';
 import 'registro_screen.dart';
 import 'solicitudes_screen.dart';
 
@@ -16,13 +19,16 @@ class PerfilScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sesion = context.watch<SesionModel>();
-    final carrito = context.watch<CarritoModel>();
+    final solicitudes = context.watch<SolicitudesModel>();
     final usuario = sesion.usuario;
 
+    // Mientras Firebase revisa si hay una sesión guardada
+    if (!sesion.sesionRevisada) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: kVino)));
+    }
     if (usuario == null) return const RegistroScreen();
 
-    void abrir(Widget pantalla) =>
-        Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
+    void abrir(Widget pantalla) => Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
 
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const Text('Perfil')),
@@ -48,8 +54,10 @@ class PerfilScreen extends StatelessWidget {
                       Text(usuario.nombre,
                           style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
                       Text(usuario.correo, style: const TextStyle(color: Colors.white70)),
-                      Text('+503 ${usuario.telefono} · ${usuario.esDecorador ? 'Decorador' : 'Cliente'}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      Text(
+                        usuario.esDecorador ? 'Decorador · ${usuario.decorador}' : 'Cliente · +503 ${usuario.telefono}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
                     ],
                   ),
                 ),
@@ -57,10 +65,17 @@ class PerfilScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          if (usuario.esDecorador)
+            _Opcion(
+              icono: Icons.inbox_outlined,
+              titulo: 'Solicitudes recibidas',
+              detalle: solicitudes.pendientes == 0 ? '' : '${solicitudes.pendientes} por atender',
+              onTap: () => abrir(const PanelDecoradorScreen()),
+            ),
           _Opcion(
             icono: Icons.receipt_long_outlined,
             titulo: 'Mis solicitudes',
-            detalle: '${carrito.solicitudes.length}',
+            detalle: '${solicitudes.mias.length}',
             onTap: () => abrir(const SolicitudesScreen()),
           ),
           _Opcion(
@@ -72,7 +87,7 @@ class PerfilScreen extends StatelessWidget {
           _Opcion(
             icono: Icons.notifications_none,
             titulo: 'Notificaciones',
-            detalle: carrito.noLeidas == 0 ? '' : '${carrito.noLeidas} nuevas',
+            detalle: solicitudes.noLeidas == 0 ? '' : '${solicitudes.noLeidas} nuevas',
             onTap: () => abrir(const NotificacionesScreen()),
           ),
           const SizedBox(height: 20),
@@ -86,6 +101,16 @@ class PerfilScreen extends StatelessWidget {
             icon: const Icon(Icons.logout),
             label: const Text('Cerrar sesión'),
           ),
+          // Crash de prueba de Crashlytics: kDebugMode es constante de compilación,
+          // así que en el APK de release este botón no existe
+          if (kDebugMode && !kIsWeb) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () => FirebaseCrashlytics.instance.crash(),
+              icon: const Icon(Icons.bug_report_outlined, color: kMalva),
+              label: const Text('Probar Crashlytics (solo debug)', style: TextStyle(color: kMalva)),
+            ),
+          ],
         ],
       ),
     );

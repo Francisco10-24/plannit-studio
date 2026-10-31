@@ -29,6 +29,15 @@ class Decorador {
       descripcion: (json['descripcion'] as String?) ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nombre': nombre,
+        'zona': zona,
+        'rating': rating,
+        'imagen': imagen,
+        'descripcion': descripcion,
+      };
 }
 
 // Todo lo que devuelve el GET del backend en una sola respuesta
@@ -56,4 +65,11 @@ class Catalogo {
           .toList(),
     );
   }
+
+  // Camino inverso: se usa para guardar el catálogo en la base local (Sembast)
+  Map<String, dynamic> toJson() => {
+        'paquetes': paquetes.map((p) => p.toJson()).toList(),
+        'extras': extras.map((e) => e.toJson()).toList(),
+        'decoradores': decoradores.map((d) => d.toJson()).toList(),
+      };
 }

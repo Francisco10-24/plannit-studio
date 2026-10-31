@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733051287421",
+    "project_id": "plannit-studio-esen",
+    "storage_bucket": "plannit-studio-esen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733051287421:android:4973b46fa15bac6e11fe14",
+        "android_client_info": {
+          "package_name": "com.plannit.plannit_studio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBUeKo_6FkowkBEtV3UQwxI-73x_h8HOs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

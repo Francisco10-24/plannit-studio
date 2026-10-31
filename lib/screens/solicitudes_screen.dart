@@ -3,14 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../models/solicitud.dart';
 import '../shared/theme.dart';
-import '../state/carrito_model.dart';
+import '../state/solicitudes_model.dart';
 import '../utils/formato.dart';
 import '../widgets/comunes.dart';
 import '../widgets/seguimiento.dart';
 import '../widgets/tarjeta_paquete.dart';
 import 'detalle_paquete_screen.dart';
 
-// Historial de solicitudes enviadas y su estado en vivo
+// Solicitudes enviadas por el cliente. El estado llega en tiempo real desde Firestore.
 class SolicitudesScreen extends StatelessWidget {
   const SolicitudesScreen({super.key, this.recienEnviadas = false});
 
@@ -18,7 +18,7 @@ class SolicitudesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final solicitudes = context.watch<CarritoModel>().solicitudes;
+    final solicitudes = context.watch<SolicitudesModel>().mias;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mis solicitudes')),
@@ -38,21 +38,24 @@ class SolicitudesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
-                ...solicitudes.map((s) => _TarjetaSolicitud(solicitud: s)),
+                ...solicitudes.map((s) => TarjetaSolicitud(solicitud: s)),
               ],
             ),
     );
   }
 }
 
-class _TarjetaSolicitud extends StatelessWidget {
-  const _TarjetaSolicitud({required this.solicitud});
+// Tarjeta de una solicitud. La usan el cliente y el panel del decorador.
+class TarjetaSolicitud extends StatelessWidget {
+  const TarjetaSolicitud({super.key, required this.solicitud, this.acciones});
 
   final Solicitud solicitud;
 
+  // Botones extra (solo en el panel del decorador)
+  final Widget? acciones;
+
   @override
   Widget build(BuildContext context) {
-    final evento = solicitud.evento;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -67,15 +70,20 @@ class _TarjetaSolicitud extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(evento.nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                child: Text(solicitud.evento, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               ),
-              Text('#SOL-${solicitud.numero}', style: const TextStyle(color: kMalva, fontWeight: FontWeight.w600)),
+              Text('#${solicitud.numero}', style: const TextStyle(color: kMalva, fontWeight: FontWeight.w600)),
             ],
           ),
-          Text('${evento.tipo} · ${formatoFecha(evento.fecha)} · ${formatoHora(evento.hora)}',
+          Text('${solicitud.tipo} · ${formatoFecha(solicitud.fecha)} · ${formatoHora(solicitud.hora)}',
               style: const TextStyle(color: kMalva)),
           const SizedBox(height: 8),
-          FilaPaquete(paquete: evento.paquete, onTap: () => abrirDetalle(context, evento.paquete)),
+          FilaPaquete(paquete: solicitud.paquete, onTap: () => abrirDetalle(context, solicitud.paquete)),
+          if (solicitud.extras.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Extras: ${solicitud.extras.join(', ')}', style: const TextStyle(color: kMalva, fontSize: 13)),
+            ),
           const SizedBox(height: 12),
           Seguimiento(estado: solicitud.estado),
           const Divider(height: 28, color: kBorde),
@@ -88,6 +96,7 @@ class _TarjetaSolicitud extends StatelessWidget {
               Text(formatoPrecio(solicitud.total), style: const TextStyle(fontWeight: FontWeight.w800)),
             ],
           ),
+          ?acciones,
         ],
       ),
     );

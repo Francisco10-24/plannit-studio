@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/api_client.dart';
-import '../data/paquetes_service.dart';
+import '../data/servicios/monitoreo.dart';
 import '../models/solicitud.dart';
 import '../shared/theme.dart';
 import '../state/carrito_model.dart';
 import '../state/navegacion_model.dart';
 import '../state/sesion_model.dart';
+import '../state/solicitudes_model.dart';
 import '../utils/formato.dart';
 import '../widgets/comunes.dart';
 import '../widgets/tarjeta_paquete.dart';
@@ -59,26 +61,17 @@ class _CarritoScreenState extends State<CarritoScreen> {
       if (lista != true || !mounted) return;
     }
 
+    if (!mounted) return;
+    final solicitudes = context.read<SolicitudesModel>();
     setState(() => _enviando = true);
     var enviados = 0;
     try {
-      // Un POST por evento. Se copia la lista porque el carrito cambia al enviar.
-      for (final evento in List.of(carrito.eventos)) {
-        final resultado = await paquetesService.enviarSolicitud(
-          carrito.solicitudJson(evento, sesion.usuario!.nombre),
-        );
-        // No basta con que "no truene": se revisa el código 201 Created
-        if (resultado.codigo != 201) {
-          _mensaje('Respuesta inesperada del servidor (${resultado.codigo}).');
-          break;
-        }
-        carrito.registrarEnviado(evento, resultado.numero);
-        enviados++;
-
-        // Simulación del decorador: revisa a los 4 s y aprueba a los 10 s
-        Future.delayed(const Duration(seconds: 4), () => carrito.avanzarSolicitud(resultado.numero));
-        Future.delayed(const Duration(seconds: 10), () => carrito.avanzarSolicitud(resultado.numero));
-      }
+      // Cada evento del carrito se guarda como una solicitud en Firestore
+      enviados = await solicitudes.enviarCarrito(carrito, sesion.usuario!);
+    } on FirebaseException catch (e, pila) {
+      // Error no fatal: se reporta a Crashlytics y el carrito no se pierde
+      await Reportes.errorNoFatal(e, pila, donde: 'enviar_carrito');
+      _mensaje('No se pudo enviar. Revisa tu conexión e intenta de nuevo.');
     } on DioException catch (e) {
       _mensaje(mensajeDeError(e));
     } finally {
@@ -152,7 +145,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
   }
 
   Widget _botonSolicitudes(BuildContext context, CarritoModel carrito) {
-    if (carrito.solicitudes.isEmpty) return const SizedBox.shrink();
+    if (context.watch<SolicitudesModel>().mias.isEmpty) return const SizedBox.shrink();
     return TextButton.icon(
       onPressed: () => Navigator.push(
         context,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../shared/theme.dart';
 import '../state/carrito_model.dart';
 import '../state/navegacion_model.dart';
+import '../state/solicitudes_model.dart';
 import '../widgets/comunes.dart';
 import 'carrito_screen.dart';
 import 'inicio_screen.dart';
@@ -18,6 +19,8 @@ class HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final navegacion = context.watch<NavegacionModel>();
     final enCarrito = context.watch<CarritoModel>().cantidad;
+    // Para decoradores: solicitudes que todavía no aprueban
+    final pendientes = context.watch<SolicitudesModel>().pendientes;
 
     return Scaffold(
       // IndexedStack conserva cada pestaña viva: no se repite el GET al cambiar
@@ -51,8 +54,11 @@ class HomeShell extends StatelessWidget {
             activeIcon: IconoConContador(icono: Icons.shopping_bag, cantidad: enCarrito),
             label: 'Carrito',
           ),
-          const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil'),
+          BottomNavigationBarItem(
+            icon: IconoConContador(icono: Icons.person_outline, cantidad: pendientes),
+            activeIcon: IconoConContador(icono: Icons.person, cantidad: pendientes),
+            label: 'Perfil',
+          ),
         ],
       ),
     );

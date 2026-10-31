@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../data/api_client.dart';
 import '../data/cargar_catalogo.dart';
-import '../models/catalogo.dart';
+import '../data/repositorios/catalogo_repository.dart';
 import '../models/paquete.dart';
 import '../shared/theme.dart';
 import '../state/cotizacion_model.dart';
@@ -40,7 +40,7 @@ class _PaquetesScreenState extends State<PaquetesScreen> {
   static const tipos = ['Cumpleaños', 'Bodas', 'Quince años', 'Baby shower', 'Graduación', 'Infantil'];
 
   final _buscadorCtrl = TextEditingController();
-  late Future<Catalogo> _futuro;
+  late Future<ResultadoCatalogo> _futuro;
 
   String? _estilo;
   String? _tipo;
@@ -189,7 +189,7 @@ class _PaquetesScreenState extends State<PaquetesScreen> {
             ),
           const SizedBox(height: 12),
           Expanded(
-            child: FutureBuilder<Catalogo>(
+            child: FutureBuilder<ResultadoCatalogo>(
               future: _futuro,
               builder: (context, snapshot) {
                 // 1) Esperando respuesta
@@ -202,18 +202,6 @@ class _PaquetesScreenState extends State<PaquetesScreen> {
 
                 // 2) Error: se distingue el tipo de DioException
                 if (snapshot.hasError) {
-                  final guardado = cotizacion.ultimoCatalogo;
-                  if (esSinConexion(snapshot.error!) && guardado != null) {
-                    return _lista(
-                      guardado.paquetes,
-                      aviso: BannerEstado(
-                        tipo: TipoBanner.aviso,
-                        mensaje: textoSinConexion(cotizacion.consultadoEn),
-                        accion: 'Reintentar',
-                        onAccion: _recargar,
-                      ),
-                    );
-                  }
                   return Padding(
                     padding: const EdgeInsets.all(20),
                     child: BannerEstado(
@@ -225,8 +213,19 @@ class _PaquetesScreenState extends State<PaquetesScreen> {
                   );
                 }
 
-                // 3) Datos recibidos
-                return _lista(snapshot.data!.paquetes);
+                // 3) Datos: del servidor, o de la base local si no hay internet
+                final resultado = snapshot.data!;
+                return _lista(
+                  resultado.catalogo.paquetes,
+                  aviso: resultado.desdeCache
+                      ? BannerEstado(
+                          tipo: TipoBanner.aviso,
+                          mensaje: textoSinConexion(resultado.actualizadoEn),
+                          accion: 'Reintentar',
+                          onAccion: _recargar,
+                        )
+                      : null,
+                );
               },
             ),
           ),

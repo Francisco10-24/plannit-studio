@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../shared/theme.dart';
-import '../state/carrito_model.dart';
+import '../state/solicitudes_model.dart';
 import '../utils/formato.dart';
 import '../widgets/comunes.dart';
 import 'solicitudes_screen.dart';
@@ -22,15 +22,15 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   @override
   void initState() {
     super.initState();
-    final carrito = context.read<CarritoModel>();
-    _nuevas = carrito.notificaciones.where((n) => !n.leida).toSet();
+    final solicitudes = context.read<SolicitudesModel>();
+    _nuevas = solicitudes.notificaciones.where((n) => !n.leida).toSet();
     // Después del primer dibujo se marcan como leídas (se apaga el contador)
-    WidgetsBinding.instance.addPostFrameCallback((_) => carrito.marcarLeidas());
+    WidgetsBinding.instance.addPostFrameCallback((_) => solicitudes.marcarLeidas());
   }
 
   @override
   Widget build(BuildContext context) {
-    final notificaciones = context.watch<CarritoModel>().notificaciones;
+    final notificaciones = context.watch<SolicitudesModel>().notificaciones;
     final ahora = DateTime.now();
 
     return Scaffold(

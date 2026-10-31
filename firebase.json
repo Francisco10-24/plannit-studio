@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "plannit-studio-esen",
+          "appId": "1:733051287421:android:4973b46fa15bac6e11fe14",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "plannit-studio-esen",
+          "configurations": {
+            "android": "1:733051287421:android:4973b46fa15bac6e11fe14",
+            "web": "1:733051287421:web:ea917b64d76a739611fe14"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

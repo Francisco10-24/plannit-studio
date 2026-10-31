@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/usuario.dart';
 import '../shared/theme.dart';
+import '../state/cotizacion_model.dart';
 import '../state/sesion_model.dart';
 import '../utils/validadores.dart';
 import '../widgets/campo_texto.dart';
@@ -32,6 +34,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
   bool _terminos = false;
   bool _formularioValido = false;
   String? _errorCuenta;
+  String? _negocio; // decorador al que llegarán sus solicitudes
+  bool _creando = false;
 
   @override
   void dispose() {
@@ -52,19 +56,24 @@ class _RegistroScreenState extends State<RegistroScreen> {
     });
   }
 
-  void _crearCuenta() {
+  Future<void> _crearCuenta() async {
     if (!_formKey.currentState!.validate() || !_terminos) return;
     _formKey.currentState!.save();
-    final error = context.read<SesionModel>().registrar(
-          Usuario(
-            nombre: _nombreCtrl.text.trim(),
-            correo: _correoCtrl.text.trim(),
-            telefono: _telefonoCtrl.text.trim(),
-            esDecorador: !_esCliente,
-            password: _passwordCtrl.text,
-          ),
+    setState(() {
+      _creando = true;
+      _errorCuenta = null;
+    });
+    final error = await context.read<SesionModel>().registrar(
+          nombre: _nombreCtrl.text.trim(),
+          correo: _correoCtrl.text,
+          telefono: _telefonoCtrl.text.trim(),
+          password: _passwordCtrl.text,
+          rol: _esCliente ? Rol.cliente : Rol.decorador,
+          decorador: _esCliente ? null : _negocio,
         );
-    // El correo ya existía: se muestra el aviso y no se crea la cuenta
+    if (!mounted) return;
+    setState(() => _creando = false);
+    // Por ejemplo, el correo ya existía: se muestra el aviso y no se crea la cuenta
     if (error != null) {
       setState(() => _errorCuenta = error);
       return;
@@ -86,6 +95,28 @@ class _RegistroScreenState extends State<RegistroScreen> {
     );
     // Si inició sesión desde "Enviar solicitud", se regresa al carrito
     if (entro == true && widget.desdeSolicitud && mounted) Navigator.pop(context, true);
+  }
+
+  Widget _selectorNegocio() {
+    final catalogo = context.watch<CotizacionModel>().ultimoCatalogo;
+    final negocios = catalogo?.decoradores.map((d) => d.nombre).toList() ?? const <String>[];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const EtiquetaSeccion('Tu negocio'),
+          DropdownButtonFormField<String>(
+            initialValue: _negocio,
+            hint: const Text('Elige tu negocio'),
+            items: negocios.map((n) => DropdownMenuItem(value: n, child: Text(n))).toList(),
+            onChanged: (valor) => setState(() => _negocio = valor),
+            // Validación cruzada: si el rol es Decorador, el negocio es obligatorio
+            validator: (valor) => !_esCliente && valor == null ? 'Elige el negocio que representas' : null,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -111,15 +142,20 @@ class _RegistroScreenState extends State<RegistroScreen> {
               style: const TextStyle(color: kMalva),
             ),
             const SizedBox(height: 20),
-            if (_errorCuenta != null) ...[
-              BannerEstado(
-                tipo: TipoBanner.error,
-                mensaje: _errorCuenta!,
-                accion: 'Iniciar sesión',
-                onAccion: _irALogin,
-              ),
-              const SizedBox(height: 16),
-            ],
+            // Espacio fijo para el aviso: si apareciera y desapareciera,
+            // los campos de abajo cambiarían de posición y sus errores se mezclarían
+            if (_errorCuenta != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: BannerEstado(
+                  tipo: TipoBanner.error,
+                  mensaje: _errorCuenta!,
+                  accion: 'Iniciar sesión',
+                  onAccion: _irALogin,
+                ),
+              )
+            else
+              const SizedBox.shrink(),
             SegmentedButton<bool>(
               segments: const [
                 ButtonSegment(value: true, label: Text('Cliente'), icon: Icon(Icons.person_outline)),
@@ -133,6 +169,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            // Solo para decoradores: a qué negocio llegarán las solicitudes (mismo espacio fijo)
+            if (_esCliente) const SizedBox.shrink() else _selectorNegocio(),
             CampoTexto(
               etiqueta: 'Nombre completo',
               controller: _nombreCtrl,
@@ -206,8 +244,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
             const SizedBox(height: 8),
             FilledButton(
               // Deshabilitado hasta que todo sea válido
-              onPressed: _formularioValido && _terminos ? _crearCuenta : null,
-              child: const Text('Crear cuenta'),
+              onPressed: _formularioValido && _terminos && !_creando ? _crearCuenta : null,
+              child: _creando
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Crear cuenta'),
             ),
             if (!(_formularioValido && _terminos))
               const Padding(

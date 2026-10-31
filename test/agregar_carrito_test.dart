@@ -8,6 +8,8 @@ import 'package:plannit_studio/state/navegacion_model.dart';
 import 'package:plannit_studio/state/sesion_model.dart';
 import 'package:provider/provider.dart';
 
+import 'fakes.dart';
+
 Paquete paquete(int id, String nombre) => Paquete(
       id: id,
       nombre: nombre,
@@ -37,7 +39,7 @@ void main() {
         providers: [
           ChangeNotifierProvider.value(value: cotizacion),
           ChangeNotifierProvider.value(value: carrito),
-          ChangeNotifierProvider(create: (_) => SesionModel()),
+          ChangeNotifierProvider(create: (_) => SesionModel(auth: FakeAuthService())),
           ChangeNotifierProvider(create: (_) => NavegacionModel()),
         ],
         child: MaterialApp(home: DetallePaqueteScreen(paquete: p)),

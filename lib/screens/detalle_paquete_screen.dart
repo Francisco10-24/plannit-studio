@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/servicios/monitoreo.dart';
 import '../models/catalogo.dart';
 import '../models/paquete.dart';
 import '../shared/theme.dart';
@@ -16,6 +17,8 @@ import 'decorador_screen.dart';
 
 // Atajo para abrir el detalle desde cualquier lista
 void abrirDetalle(BuildContext context, Paquete paquete) {
+  // Analytics: solo el id del paquete, ningún dato personal
+  Analitica.evento('ver_paquete', {'paquete_id': paquete.id});
   Navigator.push(context, MaterialPageRoute(builder: (_) => DetallePaqueteScreen(paquete: paquete)));
 }
 
@@ -260,6 +263,9 @@ Future<void> agregarAlCarrito(BuildContext context, Paquete paquete) async {
       paquete: paquete,
     );
   }
+
+  await Analitica.evento('agregar_al_carrito', {'paquete_id': paquete.id, 'estilo': paquete.estilo});
+  if (!context.mounted) return;
 
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
