@@ -214,3 +214,35 @@ flutter build apk --release  # genera build/app/outputs/flutter-apk/app-release.
 | 29 ML Kit | No se usa: no aporta al flujo de decoración | — |
 
 **Pregunta probable:** "¿Por qué el correo va en secure storage y los favoritos no?" Los favoritos son ids de paquetes (sin consecuencias si se leen). El correo es un dato de la cuenta: va cifrado.
+
+## 10. Reparto para la defensa
+Cada integrante debe poder explicar línea por línea los archivos de su parte.
+
+**Mauricio Recinos · Backend, datos y Firebase**
+- Firebase Auth y roles: `data/servicios/auth_service.dart`, `state/sesion_model.dart`, `models/usuario.dart`.
+- Firestore en tiempo real y reglas: `data/repositorios/solicitudes_repository.dart`, `state/solicitudes_model.dart`, `firestore.rules`.
+- Repository e inyección por constructor: `main.dart`, `data/repositorios/catalogo_repository.dart`.
+- Sembast (singleton, caché sin conexión, carrito): `data/fuentes/`.
+- Crashlytics, Analytics y FCM: `data/servicios/monitoreo.dart`, `data/servicios/notificaciones_push.dart`.
+- Pregunta típica: "¿Por qué las pantallas no cambiaron al pasar del POST a Firestore?"
+
+**Francisco Rauda · Flujo del cliente y estado**
+- Provider y `ChangeNotifier`: `state/carrito_model.dart` (total con `fold`, `assert`, un paquete por evento).
+- Explorar → Detalle → Agregar al carrito → Enviar: `screens/paquetes_screen.dart`, `screens/detalle_paquete_screen.dart`, `screens/carrito_screen.dart`.
+- GET con Dio, `FutureBuilder` y modo sin conexión: `data/api_client.dart`, `data/cargar_catalogo.dart`.
+- Validación cruzada: `screens/cotiza_screen.dart`, `utils/validadores.dart`.
+- Pregunta típica: "¿Por qué el total es un getter y no una variable?"
+
+**Paola Guzmán · Diseño e interfaz**
+- Diseño en Stitch y sistema visual: `docs/DESIGN.md`, `shared/theme.dart`.
+- Widgets reutilizables: `widgets/tarjeta_paquete.dart`, `widgets/campo_texto.dart`, `widgets/comunes.dart`.
+- Pantallas Inicio y Perfil: `screens/inicio_screen.dart`, `screens/perfil_screen.dart`.
+- Formularios con `Form`, `GlobalKey` y `validator`: `screens/registro_screen.dart`, `screens/login_screen.dart`.
+- Pregunta típica: "¿Por qué la `GlobalKey` va en el State y no en `build()`?"
+
+**Rodrigo Quijada · Requisitos, calidad y almacenamiento simple**
+- Requisitos de la ficha y cómo se cumplen (sección 4) y recorrido de la demo (sección 2).
+- SharedPreferences y flutter_secure_storage: `data/servicios/almacenamiento.dart`.
+- Calidad: `analysis_options.yaml` y `flutter analyze`.
+- Pruebas: qué verifica cada archivo de `test/` y cómo correr `flutter test`.
+- Pregunta típica: "¿Por qué el correo va cifrado y los favoritos no?"
