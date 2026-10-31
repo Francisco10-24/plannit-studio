@@ -28,7 +28,8 @@ Plannit Studio es un marketplace para contratar **decoración de eventos** en Sa
 7. **Enviar solicitud**: como no hay sesión, se abre **Crea tu cuenta**.
    - Mostrar los errores del formulario.
    - Tocar "¿Ya tienes cuenta? Inicia sesión" → **Usar cuenta de prueba** → Entrar.
-8. **Mis solicitudes**: la app regresa sola, hace el POST (201) y muestra **Enviada**. A los 4 s pasa a **En revisión** y a los 10 s a **Aprobada**. La campana de Inicio muestra el contador de avisos nuevos.
+8. **Mis solicitudes**: la solicitud se guarda en **Firestore** y aparece como **Enviada**.
+9. **Cuenta Decorador** (en otro celular o cerrando sesión): Perfil → Solicitudes recibidas → **Revisar** → **Aprobar**. El cliente ve el cambio al instante y le llega el aviso en la campana.
 9. **Modo avión** (requisito 5 de la ficha): quitar internet y deslizar hacia abajo en Explorar. Aparece "Sin conexión · mostrando paquetes guardados del …".
 
 Cuenta de prueba: `andrea@plannit.sv` / `Plannit26`.
@@ -52,7 +53,7 @@ lib/
   utils/formato.dart           precios, fechas y horas en español
   widgets/                  tarjeta de paquete, campo de texto, banner, seguimiento
   screens/                  12 pantallas + la barra inferior
-test/                       41 pruebas automáticas
+test/                       51 pruebas automáticas (con fakes)
 ```
 **Idea clave:** las pantallas solo dibujan. Las reglas viven en `utils/`, los datos en `models/`, la red en `data/` y lo que comparten varias pantallas en `state/`.
 
@@ -156,11 +157,12 @@ Hay una segunda validación cruzada, **entre el formulario y el carrito**: al ag
 
 ## 5. El backend (de dónde salen los datos)
 - **GET:** el archivo `db.json` del repo público `github.com/Francisco10-24/plannit-studio-api` (versión etiquetada `v2`), servido por **HTTPS** con jsDelivr.
-- **POST:** va a **JSONPlaceholder**. Responde `201 Created`, pero no guarda nada. La aprobación del decorador se **simula** con un temporizador (4 s y 10 s), igual que el pago, que según la ficha está fuera del alcance.
+- **Solicitudes:** se guardan en **Cloud Firestore** (`FirestoreSolicitudes`). El decorador las aprueba desde su panel y el cliente lo ve en tiempo real (`snapshots()`).
+- **POST con Dio:** sigue disponible como implementación alternativa (`HttpSolicitudes`, JSONPlaceholder, revisa el 201). Se cambia en una línea de `main.dart` sin tocar pantallas.
 - **Pregunta probable:** "¿Las cuentas y el carrito se guardan?"
-  Viven en memoria mientras la app está abierta. Guardarlos en el teléfono es el tema de la Semana 8 (persistencia local).
+  Sí. Cuentas y solicitudes en Firebase; carrito y catálogo en Sembast; favoritos en SharedPreferences.
 
-## 6. Pruebas automáticas (`flutter test` → 41/41)
+## 6. Pruebas automáticas (`flutter test` → 51/51)
 | Archivo | Qué prueba |
 |---|---|
 | `validadores_test.dart` | cada regla de formulario y cada regla cruzada |
@@ -192,6 +194,23 @@ Hay una segunda validación cruzada, **entre el formulario y el carrito**: al ag
 cd C:\plannit_studio
 flutter run                  # en el emulador o celular
 flutter run -d chrome        # en el navegador
-flutter test                 # 41 pruebas
+flutter test                 # 51 pruebas
 flutter build apk --release  # genera build/app/outputs/flutter-apk/app-release.apk
 ```
+
+## 9. Lo nuevo de las clases 25–29
+| Clase | Qué es | Dónde |
+|---|---|---|
+| 22 Repository | Contrato + implementaciones inyectadas por constructor | `data/repositorios/`, `main.dart` |
+| 25 SharedPreferences | Favoritos, última categoría, bienvenida (no sensibles) | `data/servicios/almacenamiento.dart` |
+| 25 flutter_secure_storage | Último correo de inicio de sesión (cifrado) | `almacenamiento.dart`, `login_screen.dart` |
+| 26 Sembast | Singleton `BaseLocal`; catálogo sin conexión y carrito persistente | `data/fuentes/` |
+| 28 Análisis y logging | `avoid_print`, `prefer_const_constructors`, `unawaited_futures`; `debugPrint` | `analysis_options.yaml` |
+| 28 assert | Precio o total negativo = estado imposible (solo debug) | `state/carrito_model.dart` |
+| 28 Pruebas con fakes | `FakeAuthService`, `FakeSolicitudes`, `FakeCatalogoRemoto`; `closeTo` | `test/fakes.dart` |
+| 29 Analytics | `ver_paquete`, `agregar_al_carrito`, `enviar_solicitud`, sin datos personales | `data/servicios/monitoreo.dart` |
+| 29 Crashlytics | `FlutterError.onError`, `PlatformDispatcher.onError`, `recordError(fatal: false)`, crash de prueba solo en `kDebugMode` | `main.dart`, `perfil_screen.dart` |
+| 29 FCM | Permiso, primer plano (`onMessage` + `navigatorKey` + `mounted`), segundo plano con `@pragma('vm:entry-point')` | `data/servicios/notificaciones_push.dart` |
+| 29 ML Kit | No se usa: no aporta al flujo de decoración | — |
+
+**Pregunta probable:** "¿Por qué el correo va en secure storage y los favoritos no?" Los favoritos son ids de paquetes (sin consecuencias si se leen). El correo es un dato de la cuenta: va cifrado.

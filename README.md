@@ -1,52 +1,49 @@
 # Plannit Studio
 
-Marketplace móvil para contratar **decoración de eventos** en San Salvador (cumpleaños, bodas, quince años, baby showers, graduaciones, fiestas infantiles).
-Proyecto de Desarrollo de Aplicaciones Móviles — Flutter + Dart.
+Marketplace móvil para contratar **decoración de eventos** en San Salvador: el cliente explora paquetes, arma su carrito (varios eventos, un paquete por evento) y envía solicitudes; el decorador las recibe y las aprueba en tiempo real.
+Proyecto de Desarrollo de Aplicaciones Móviles — Flutter + Dart + Firebase.
 
 Equipo: Rodrigo Quijada · Mauricio Recinos · Paola Guzmán · Francisco Rauda
 
-## Cómo correrla
+## Cómo ejecutar
 ```bash
 flutter pub get
 flutter run
 ```
-Con un emulador o celular conectado se instala como app. Para el navegador: `flutter run -d chrome` (F12 → Ctrl+Shift+M → 390 × 844).
+- Flutter 3.47.1 (stable), Dart 3.13.1.
+- La configuración de Firebase ya está en el repo (`lib/firebase_options.dart` y `android/app/google-services.json`, generados con `flutterfire configure`). No hace falta ninguna clave extra.
+- Las cuentas de prueba (cliente y decorador) están en el documento de entrega, no en este repositorio.
 
-Cuenta de prueba para la demo: `andrea@plannit.sv` / `Plannit26` (también hay un botón "Usar cuenta de prueba" en Inicia sesión).
-
-Pruebas:
+Pruebas y análisis:
 ```bash
 flutter test
+flutter analyze
 ```
 
+## Arquitectura por capas
+| Capa | Carpetas y clases |
+|---|---|
+| Presentación | `lib/screens/` (13 pantallas), `lib/widgets/` |
+| Estado | Provider + ChangeNotifier: `CarritoModel`, `SolicitudesModel`, `SesionModel`, `CotizacionModel`, `NavegacionModel` (`lib/state/`) |
+| Repository | `CatalogoRepository`, `SolicitudesRepository` (contrato) con `FirestoreSolicitudes` y `HttpSolicitudes` (`lib/data/repositorios/`) |
+| Fuentes de datos | Remota: `DioCatalogoRemoto` (HTTPS), Firestore. Local: Sembast (`CatalogoLocal`, `CarritoLocal`), SharedPreferences y flutter_secure_storage (`lib/data/fuentes/`, `lib/data/servicios/`) |
+| Servicios externos | Firebase Auth, Cloud Firestore, Analytics, Crashlytics, Cloud Messaging; catálogo en [plannit-studio-api](https://github.com/Francisco10-24/plannit-studio-api) vía jsDelivr |
+
 ## Pantallas
-| Pantalla | Qué hace | Requisito de clase | Archivo |
-|---|---|---|---|
-| Inicio (estilo Airbnb) | Primera pantalla sin login: categorías, paquetes, decoradores cerca, aviso del carrito, campana | HTTPS GET + `FutureBuilder` | `screens/inicio_screen.dart` |
-| Cotiza tu deco | Datos del evento; al validar filtra Explorar con tipo, estilo y presupuesto | **Validación cruzada** | `screens/cotiza_screen.dart`, `utils/validadores.dart` |
-| Explorar | Buscador, chips de estilo, filtros (tipo, precio, orden), modo sin conexión | HTTPS GET, `where` | `screens/paquetes_screen.dart`, `utils/filtros.dart` |
-| Detalle del paquete | Foto (Hero), descripción, qué incluye, paleta, decorador, **Agregar al carrito** | Formulario con validación | `screens/detalle_paquete_screen.dart` |
-| Carrito | Varios eventos, **un paquete por evento**, extras por evento, total con `fold`, envío | **HTTPS POST (201)** + `fold` | `screens/carrito_screen.dart`, `state/carrito_model.dart` |
-| Mis solicitudes | Estado en vivo: Enviada → En revisión → Aprobada | Provider | `screens/solicitudes_screen.dart` |
-| Notificaciones | Avisos de cada cambio de estado, con contador en la campana | Provider | `screens/notificaciones_screen.dart` |
-| Crea tu cuenta | Registro cliente/decorador, aviso si el correo ya existe | **Validación de formularios** | `screens/registro_screen.dart`, `widgets/campo_texto.dart` |
-| Inicia sesión | Correo + contraseña, mensajes de error | Validación de formularios | `screens/login_screen.dart` |
-| Perfil, Favoritos, Decorador | Datos de la cuenta, paquetes guardados, perfil de cada decorador | Provider | `screens/perfil_screen.dart`, `favoritos_screen.dart`, `decorador_screen.dart` |
+Inicio · Cotiza tu deco · Explorar · Detalle del paquete · Carrito · Mis solicitudes · Notificaciones · Crea tu cuenta · Inicia sesión · Perfil · Favoritos · Decorador · Panel del decorador.
 
-## Cómo está hecha
-- **Estado (Provider):** cuatro `ChangeNotifier` en `main.dart`:
-  - `CarritoModel`: eventos, extras, solicitudes y notificaciones.
-  - `SesionModel`: cuenta y favoritos.
-  - `CotizacionModel`: cotización, caché sin conexión y búsquedas recientes.
-  - `NavegacionModel`: pestaña activa.
-- **Totales:** nunca se guardan. Son getters con `where` + `fold` (`CarritoModel.total`, `totalEvento`, `subtotalExtras`).
-- **Red:** una sola instancia de `Dio` con un interceptor que registra método, URL, código y tiempo en la consola (`data/api_client.dart`). Cada tipo de `DioException` tiene su propio mensaje.
-- **Backend de prueba:**
-  - GET → `db.json` (18 paquetes, 6 extras, 6 decoradores) del repo [plannit-studio-api](https://github.com/Francisco10-24/plannit-studio-api), versión `v2`, servido por jsDelivr.
-  - POST → JSONPlaceholder (responde 201, no guarda datos).
-- **Diseño:** `docs/DESIGN.md` (rojo vino #9B1B30, tipografía Figtree). Diseño original en Google Stitch.
+## Temas del curso aplicados
+| Tema | Dónde |
+|---|---|
+| Formularios y validación cruzada | `screens/registro_screen.dart`, `screens/cotiza_screen.dart`, `utils/validadores.dart` |
+| HTTP GET/POST con Dio, interceptor, `DioException` | `data/api_client.dart`, `data/repositorios/` |
+| Repository + inyección por constructor | `data/repositorios/`, `main.dart` |
+| SharedPreferences | `data/servicios/almacenamiento.dart` (favoritos, última categoría, bienvenida) |
+| flutter_secure_storage | `data/servicios/almacenamiento.dart` (último correo de inicio de sesión) |
+| Sembast (NoSQL local) | `data/fuentes/` (caché del catálogo sin conexión, carrito persistente) |
+| Depuración y pruebas | `analysis_options.yaml`, `assert` en `CarritoModel`, `test/` con fakes |
+| Firebase | Auth, Firestore (`firestore.rules`), Analytics, Crashlytics, FCM (`main.dart`, `data/servicios/`) |
 
-## Probar el modo sin conexión
-1. Abrir la app con internet (se guarda el catálogo con la fecha).
-2. Quitar internet (modo avión en el emulador, o F12 → Network → Offline en Chrome).
-3. Deslizar hacia abajo en Explorar o tocar Reintentar → "Sin conexión · mostrando paquetes guardados del …".
+## Modo sin conexión
+1. Abrir la app con internet: el catálogo se guarda en Sembast con su fecha.
+2. Quitar internet (modo avión) y deslizar hacia abajo en Explorar: aparece "Sin conexión · mostrando paquetes guardados del …".
